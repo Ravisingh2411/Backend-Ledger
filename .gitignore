@@ -1,2 +1,18 @@
-/.env
-/node_modules
+# Dependencies
+**/node_modules/
+
+# Environment variables
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build files
+**/dist/
+**/coverage/
+
+# Logs
+*.log
+
+# Editor files
+.vscode/
+.DS_Store
