@@ -1,41 +1,64 @@
+
 const mongoose = require('mongoose');
 
 const transactionSchema = new mongoose.Schema({
     fromAccount: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "account",
-        required: [true, "Transaction must be associated with a from account"],
+        ref: 'account',
+        required: true,
         index: true
     },
     toAccount: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "account",
-        required: [true, "Transaction must be associated with a to account"],
+        ref: 'account',
+        required: true,
+        index: true
+    },
+    initiatedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user',
+        required: true,
         index: true
     },
     status: {
         type: String,
         enum: {
-            values: ["PENDING", "COMPLETED", "FAILED", "REVERSED"],
-            message: "Status can be either PENDING, COMPLETED, FAILED or REVERSED"
+            values: ['PENDING', 'COMPLETED', 'FAILED', 'REVERSED'],
+            message: 'Invalid transaction status'
         },
-        default: "PENDING"
+        default: 'PENDING',
+        required: true
     },
     amount: {
         type: Number,
-        required: [true, "Amount is required for creating a transaction"],
-        min: [0, "Transaction amount can't be negative"]
+        required: true,
+        validate: {
+            validator: value =>
+                Number.isFinite(value) &&
+                value > 0 &&
+                Number.isSafeInteger(value * 100),
+            message: 'Amount must be a positive valid monetary value'
+        }
     },
     idempotencyKey: {
         type: String,
-        required: [true, "Idempotency Key is required for creating a transaction"],
-        index: true, 
-        unique: true
+        required: true,
+        trim: true,
+        minlength: 1,
+        maxlength: 128
     }
-},{
+}, {
     timestamps: true
-})
+});
 
-const transactionModel = mongoose.model("transaction", transactionSchema);
+transactionSchema.index(
+    { initiatedBy: 1, idempotencyKey: 1 },
+    { unique: true }
+);
+
+const transactionModel = mongoose.model(
+    'transaction',
+    transactionSchema
+);
 
 module.exports = transactionModel;

@@ -1,26 +1,47 @@
+
 const express = require('express');
 
 const authMiddleware = require('../middlewares/auth.middleware');
-
 const accountController = require('../controllers/account.controller');
 
 const router = express.Router();
 
-/* POST /api/accounts/ */
+router.use(authMiddleware.authMiddleware);
+
+// Create account
 router.post(
     '/',
-    authMiddleware.authMiddleware,
     accountController.createAccountController
 );
 
-/* GET /api/accounts/ */
+// Get all user accounts
 router.get(
     '/',
-    authMiddleware.authMiddleware,
     accountController.getUserAccountsController
 );
 
-/* GET /api/accounts/balance/:accountId */
-router.get("/balance/:accountId", authMiddleware.authMiddleware, accountController.getAccountBalanceController)
+// Get account balance
+router.get(
+    '/balance/:accountId',
+    accountController.getAccountBalanceController
+);
+
+// Freeze account
+router.patch(
+    '/:accountId/freeze',
+    accountController.freezeAccountController
+);
+
+// Unfreeze account
+router.patch(
+    '/:accountId/unfreeze',
+    accountController.unfreezeAccountController
+);
+
+// Close account
+router.patch(
+    '/:accountId/close',
+    accountController.closeAccountController
+);
 
 module.exports = router;

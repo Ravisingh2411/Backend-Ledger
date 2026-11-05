@@ -1,104 +1,198 @@
-const userModel = require('../models/user.model');
-const authModel = require('../models/user.model');
-const emailService = require('../services/email.service');
-const tokenBlackListModel = require("../models/blackList.model")
+
+const { z } = require('zod');
 const jwt = require('jsonwebtoken');
 
-/**
-* - user register controller
-* - POST /api/auth/register
-*/
-async function userRegisterController(req, res){
-    const {email, password, name} = req.body;
-    
-    const isUserExists = await userModel.findOne({email});
-    if(isUserExists){
-        return res.status(422).json({
-            message: "User already exists with email",
-            status: "failed"
-        })
+const userModel = require('../models/user.model');
+const emailService = require('../services/email.service');
+const tokenBlackListModel = require('../models/blackList.model');
+
+const TOKEN_EXPIRY = '3d';
+const TOKEN_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: TOKEN_MAX_AGE
+};
+
+const clearCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+};
+
+const registerSchema = z.object({
+    name: z.string().trim().min(1).max(100),
+    email: z.string().trim().email().max(254),
+    password: z.string().min(6).max(128)
+});
+
+const loginSchema = z.object({
+    email: z.string().trim().email().max(254),
+    password: z.string().min(1).max(128)
+});
+
+function createToken(userId) {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+    }
+
+    return jwt.sign(
+        { userId: userId.toString() },
+        process.env.JWT_SECRET,
+        {
+            expiresIn: TOKEN_EXPIRY,
+            algorithm: 'HS256'
+        }
+    );
+}
+
+function getToken(req) {
+    const cookieToken = req.cookies?.token;
+
+    if (cookieToken) {
+        return cookieToken;
+    }
+
+    const authHeader = req.get('authorization');
+
+    if (!authHeader) {
+        return null;
+    }
+
+    const parts = authHeader.trim().split(/\s+/);
+
+    if (
+        parts.length !== 2 ||
+        parts[0].toLowerCase() !== 'bearer' ||
+        !parts[1]
+    ) {
+        return null;
+    }
+
+    return parts[1];
+}
+
+function getPublicUser(user) {
+    return {
+        _id: user._id,
+        name: user.name,
+        email: user.email
+    };
+}
+
+async function userRegisterController(req, res) {
+    const validation = registerSchema.safeParse(req.body);
+
+    if (!validation.success) {
+        return res.status(400).json({
+            message: 'Invalid registration details',
+            errors: validation.error.issues.map(issue => ({
+                field: issue.path.join('.'),
+                message: issue.message
+            }))
+        });
+    }
+
+    const { name, email, password } = validation.data;
+
+    const existingUser = await userModel.findOne({ email });
+
+    if (existingUser) {
+        return res.status(409).json({
+            message: 'User already exists with this email',
+            status: 'failed'
+        });
     }
 
     const user = await userModel.create({
-        email, password, name
-    })
+        name,
+        email,
+        password
+    });
 
-    const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET, {expiresIn: "3d"});
-    res.cookie("token", token);
+    const token = createToken(user._id);
+
+    res.cookie('token', token, cookieOptions);
 
     res.status(201).json({
-        user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email
-        },
+        user: getPublicUser(user),
         token
-    })
+    });
 
-    await emailService.sendRegistrationEmail(user.email, user.name);
-} 
+    try {
+        await emailService.sendRegistrationEmail(user.email, user.name);
+    } catch (error) {
+        console.error('Registration email failed:', error.message);
+    }
+}
 
+async function userLoginController(req, res) {
+    const validation = loginSchema.safeParse(req.body);
 
-/**
-* - user login controller
-* - POST /api/auth/login
-*/
-async function userLoginController(req, res){
-    const {email, password} = req.body;
+    if (!validation.success) {
+        return res.status(400).json({
+            message: 'Invalid login details',
+            errors: validation.error.issues.map(issue => ({
+                field: issue.path.join('.'),
+                message: issue.message
+            }))
+        });
+    }
 
-    const user = await userModel.findOne({email}).select("+password");
-    if(!user){
+    const { email, password } = validation.data;
+
+    const user = await userModel.findOne({ email }).select('+password');
+
+    if (!user) {
         return res.status(401).json({
-            message: "Email or password is Invalid "
-        })
+            message: 'Email or password is invalid'
+        });
     }
 
     const isValidPassword = await user.comparePassword(password);
-    if(!isValidPassword){
+
+    if (!isValidPassword) {
         return res.status(401).json({
-            message: "Email or password is Invalid "
-        })
+            message: 'Email or password is invalid'
+        });
     }
 
-    const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET, {expiresIn: "3d"});
-    res.cookie("token", token);
+    const token = createToken(user._id);
 
-    res.status(200).json({
-        user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email
-        },
+    res.cookie('token', token, cookieOptions);
+
+    return res.status(200).json({
+        user: getPublicUser(user),
         token
-    })
+    });
 }
 
-
-/**
- * - user logout controller
- * - POST /api/auth/logout
-*/
 async function userLogoutController(req, res) {
-    const token = req.cookies.token || req.headers.authorization?.split(" ")[ 1 ]
-    if (!token) {
-        return res.status(200).json({
-            message: "User logged out successfully"
-        })
+    const token = getToken(req);
+
+    if (token) {
+        try {
+            await tokenBlackListModel.create({ token });
+        } catch (error) {
+            if (error.code !== 11000) {
+                throw error;
+            }
+        }
     }
 
-    await tokenBlackListModel.create({
-        token: token
-    })
+    res.clearCookie('token', clearCookieOptions);
 
-    res.clearCookie("token")
-
-    res.status(200).json({
-        message: "User logged out successfully"
-    })
+    return res.status(200).json({
+        message: 'User logged out successfully'
+    });
 }
 
 module.exports = {
     userRegisterController,
     userLoginController,
     userLogoutController
-}
+};

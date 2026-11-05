@@ -1,13 +1,22 @@
-const express = require('express');
-const authMiddleware = require('../middlewares/auth.middleware');
-const transactionController = require('../controllers/transaction.controller');
+
+const express = require("express");
+
+const authMiddleware = require("../middlewares/auth.middleware");
+const transactionController = require("../controllers/transaction.controller");
+const transactionHistoryController = require("../controllers/transaction-history.controller");
 
 const transactionRoutes = express.Router();
 
-/* POST /api/transactions/ */
-transactionRoutes.post('/', authMiddleware.authMiddleware, transactionController.createTransaction);
+transactionRoutes.get(
+    "/",
+    authMiddleware.authMiddleware,
+    transactionHistoryController.getUserTransactionsController
+);
 
-/* POST /api/transactions/system/initial-funds */
-transactionRoutes.post("/system/initial-funds", authMiddleware.authSystemUserMiddleware, transactionController.createInitialFundsTransaction);
+transactionRoutes.post(
+    "/",
+    authMiddleware.authMiddleware,
+    transactionController.createTransaction
+);
 
-module.exports = transactionRoutes
+module.exports = transactionRoutes;
