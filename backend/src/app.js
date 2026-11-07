@@ -1,9 +1,10 @@
-
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const cors = require('cors');
 const { rateLimit } = require('express-rate-limit');
+
+const errorHandler = require('./middlewares/error.middleware');
 
 const app = express();
 
@@ -47,18 +48,20 @@ const apiLimiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 10,
+    windowMs: 5 * 60 * 1000,
+    limit: 5,
+    skipSuccessfulRequests: true,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     message: {
-        message: 'Too many authentication attempts. Please try again later.'
+        message: 'Too many failed authentication attempts. Please try again after 5 minutes.'
     }
 });
 
 const authRouter = require('./routes/auth.routes');
 const accountRouter = require('./routes/account.routes');
 const transactionRoutes = require('./routes/transaction.routes');
+const adminRouter = require('./routes/admin.routes');
 
 app.get('/', (req, res) => {
     res.status(200).json({
@@ -72,6 +75,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/accounts', accountRouter);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/admin', adminRouter);
 
 app.use((req, res) => {
     res.status(404).json({
@@ -79,30 +83,6 @@ app.use((req, res) => {
     });
 });
 
-app.use((err, req, res, next) => {
-    if (res.headersSent) {
-        return next(err);
-    }
-
-    console.error('Request error:', err);
-
-    let statusCode = err.statusCode || err.status || 500;
-    let message = 'Internal server error';
-
-    if (err.type === 'entity.parse.failed') {
-        statusCode = 400;
-        message = 'Invalid JSON request body';
-    } else if (err.name === 'ValidationError' || err.name === 'CastError') {
-        statusCode = 400;
-        message = 'Invalid request data';
-    } else if (err.code === 11000) {
-        statusCode = 409;
-        message = 'A record with this value already exists';
-    } else if (statusCode < 500) {
-        message = err.message;
-    }
-
-    res.status(statusCode).json({ message });
-});
+app.use(errorHandler);
 
 module.exports = app;
