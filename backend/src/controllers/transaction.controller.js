@@ -250,7 +250,7 @@ async function createTransaction(req, res) {
                                 }
                             },
                             {
-                                new: true,
+                                returnDocument: 'after',
                                 session,
                                 runValidators: true
                             }
