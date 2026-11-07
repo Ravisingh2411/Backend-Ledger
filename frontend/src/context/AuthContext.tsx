@@ -1,41 +1,50 @@
-
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from 'react'
-
+﻿import { useEffect, useState, type ReactNode } from 'react'
+import AuthContext from './auth-context'
 import api from '../services/api'
 import type {
   User,
+  AuthResponse,
   LoginCredentials,
   RegisterCredentials,
-  AuthResponse,
 } from '../types/auth'
 
-interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  loading: boolean
-  login: (credentials: LoginCredentials) => Promise<void>
-  register: (credentials: RegisterCredentials) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('user')
-    return savedUser ? JSON.parse(savedUser) as User : null
-  })
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    let isMounted = true
+
+    // Remove old authentication data from localStorage.
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+
+    const restoreSession = async () => {
+      try {
+        const response = await api.get<{ user: User }>('/auth/me')
+
+        if (isMounted) {
+          setUser(response.data.user)
+        }
+      } catch {
+        if (isMounted) {
+          setUser(null)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void restoreSession()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const saveAuthData = (data: AuthResponse) => {
-    localStorage.setItem('token', data.token)
-    localStorage.setItem('user', JSON.stringify(data.user))
     setUser(data.user)
   }
 
@@ -73,8 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/auth/logout')
     } finally {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
       setUser(null)
     }
   }
@@ -93,14 +100,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider')
-  }
-
-  return context
 }

@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Check,
 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 function Register() {
   const { register, loading } = useAuth()
@@ -135,7 +135,7 @@ function Register() {
         </div>
 
         <p className="text-sm text-[#9BAFA3]">
-          © 2026 Backend Ledger. Manage money with clarity.
+          Â© 2026 Backend Ledger. Manage money with clarity.
         </p>
       </section>
 
@@ -304,7 +304,7 @@ function Register() {
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-muted">
             <ShieldCheck size={14} />
-            Secure account access · Backend Ledger
+            Secure account access Â· Backend Ledger
           </p>
         </div>
       </section>
