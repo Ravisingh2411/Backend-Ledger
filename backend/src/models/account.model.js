@@ -9,6 +9,13 @@ const accountSchema = new mongoose.Schema({
         required: [true, "Account must be associated with a user"],
         index: true
     },
+    name: {
+        type: String,
+        required: [true, "Account name is required"],
+        trim: true,
+        minlength: [2, "Account name must be at least 2 characters"],
+        maxlength: [30, "Account name cannot exceed 30 characters"]
+    },
     status: {
         type: String,
         enum: {

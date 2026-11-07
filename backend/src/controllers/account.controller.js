@@ -9,8 +9,21 @@ function createError(message, statusCode = 400) {
 }
 
 async function createAccountController(req, res) {
+    const name =
+        typeof req.body?.name === 'string'
+            ? req.body.name.trim()
+            : '';
+
+    if (name.length < 2 || name.length > 30) {
+        return res.status(400).json({
+            message: 'Account name must be between 2 and 30 characters'
+        });
+    }
+
     const account = await accountModel.create({
-        user: req.user._id
+        user: req.user._id,
+        name,
+        currency: 'INR'
     });
 
     res.status(201).json({
@@ -106,7 +119,7 @@ async function changeAccountStatus(req, res, action) {
                         }
                     },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         session,
                         runValidators: true
                     }
@@ -143,7 +156,7 @@ async function changeAccountStatus(req, res, action) {
                         }
                     },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         session,
                         runValidators: true
                     }
@@ -165,8 +178,6 @@ async function changeAccountStatus(req, res, action) {
                     );
                 }
 
-                // Write to the account first so concurrent transfers
-                // conflict with this operation.
                 const lockedAccount = await accountModel.findOneAndUpdate(
                     {
                         _id: accountId,
@@ -179,7 +190,7 @@ async function changeAccountStatus(req, res, action) {
                         }
                     },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         session
                     }
                 );
@@ -214,7 +225,7 @@ async function changeAccountStatus(req, res, action) {
                         }
                     },
                     {
-                        new: true,
+                        returnDocument: 'after',
                         session,
                         runValidators: true
                     }
