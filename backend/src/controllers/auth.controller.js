@@ -80,7 +80,8 @@ function getPublicUser(user) {
     return {
         _id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role || 'user'
     };
 }
 
@@ -108,6 +109,7 @@ async function userRegisterController(req, res) {
         });
     }
 
+    // Public registration always creates a normal user.
     const user = await userModel.create({
         name,
         email,

@@ -1,4 +1,3 @@
-
 const userModel = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const tokenBlackListModel = require('../models/blackList.model');
@@ -29,7 +28,13 @@ function getToken(req) {
     return parts[1];
 }
 
-async function authenticate(req, res, next, requireSystemUser = false) {
+async function authenticate(
+    req,
+    res,
+    next,
+    requireSystemUser = false,
+    requireAdmin = false
+) {
     const token = getToken(req);
 
     if (!token) {
@@ -84,6 +89,12 @@ async function authenticate(req, res, next, requireSystemUser = false) {
         });
     }
 
+    if (requireAdmin && user.role !== 'admin') {
+        return res.status(403).json({
+            message: 'Forbidden access, administrator privileges required'
+        });
+    }
+
     req.user = user;
 
     return next();
@@ -97,7 +108,12 @@ function authSystemUserMiddleware(req, res, next) {
     return authenticate(req, res, next, true);
 }
 
+function authAdminMiddleware(req, res, next) {
+    return authenticate(req, res, next, false, true);
+}
+
 module.exports = {
     authMiddleware,
-    authSystemUserMiddleware
+    authSystemUserMiddleware,
+    authAdminMiddleware
 };

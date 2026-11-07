@@ -80,7 +80,7 @@ async function main() {
                 return user;
             }
 
-            async function getOrCreateAccounts(user) {
+            async function getOrCreateAccounts(user, accountNames) {
                 const accounts = await accountModel
                     .find({ user: user._id })
                     .sort({ _id: 1 })
@@ -98,12 +98,14 @@ async function main() {
 
                 const firstAccount = new accountModel({
                     user: user._id,
+                    name: accountNames[0],
                     currency: "INR",
                     status: "ACTIVE"
                 });
 
                 const secondAccount = new accountModel({
                     user: user._id,
+                    name: accountNames[1],
                     currency: "INR",
                     status: "ACTIVE"
                 });
@@ -213,8 +215,15 @@ async function main() {
                 systemUser: true
             });
 
-            const testAccounts = await getOrCreateAccounts(testUser);
-            const systemAccounts = await getOrCreateAccounts(systemUser);
+            const testAccounts = await getOrCreateAccounts(
+                testUser,
+                ["Primary Account", "Savings Account"]
+            );
+
+            const systemAccounts = await getOrCreateAccounts(
+                systemUser,
+                ["Clearing Account", "Treasury Account"]
+            );
 
             const [testAccountA, testAccountB] = testAccounts;
             const [clearingAccount, treasuryAccount] = systemAccounts;

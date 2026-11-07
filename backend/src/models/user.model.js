@@ -23,28 +23,35 @@ const userSchema = new mongoose.Schema({
         minlength: [6, "password should be atleast of 6 characters"],
         select: false
     },
+    role: {
+        type: String,
+        enum: {
+            values: ['user', 'admin'],
+            message: 'Role must be either user or admin'
+        },
+        default: 'user'
+    },
     systemUser: {
         type: Boolean,
         default: false,
         immutable: true,
         select: false
     }
-},{
+}, {
     timestamps: true
-})
+});
 
-//if a user changes his/her password
-userSchema.pre("save", async function(){
-   if(!this.isModified("password")) return;
-   
-   const hash = await bcrypt.hash(this.password, 10);
-   this.password = hash;
-   return;
-})
- 
-userSchema.methods.comparePassword = async function(password){
+// Hash password before saving a new or updated password.
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
+
+    const hash = await bcrypt.hash(this.password, 10);
+    this.password = hash;
+});
+
+userSchema.methods.comparePassword = async function (password) {
     return bcrypt.compare(password, this.password);
-}
+};
 
 const userModel = mongoose.model("user", userSchema);
 

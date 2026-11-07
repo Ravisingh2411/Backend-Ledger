@@ -1,3 +1,4 @@
+
 const request = require('supertest');
 const app = require('../src/app');
 
@@ -71,6 +72,81 @@ describe('Backend API Tests', () => {
             expect(response.body.message).toBe(
                 'Invalid JSON request body'
             );
+        });
+    });
+
+    describe('CORS Configuration', () => {
+        test('should allow configured development origin', async () => {
+            const response = await request(app)
+                .get('/')
+                .set('Origin', 'http://localhost:5173');
+
+            expect(response.statusCode).toBe(200);
+            expect(
+                response.headers['access-control-allow-origin']
+            ).toBe('http://localhost:5173');
+        });
+
+        test('should not allow an unknown origin', async () => {
+            const response = await request(app)
+                .get('/')
+                .set('Origin', 'https://unknown.example.com');
+
+            expect(response.statusCode).toBe(200);
+            expect(
+                response.headers['access-control-allow-origin']
+            ).toBeUndefined();
+        });
+    });
+
+    describe('Production Configuration', () => {
+        test('should enable trust proxy and allow configured frontend origin', async () => {
+            const previousNodeEnv = process.env.NODE_ENV;
+            const previousFrontendUrl = process.env.FRONTEND_URL;
+
+            let productionApp;
+
+            try {
+                process.env.NODE_ENV = 'production';
+                process.env.FRONTEND_URL =
+                    'https://frontend.example.com';
+
+                jest.isolateModules(() => {
+                    productionApp = require('../src/app');
+                });
+            } finally {
+                if (previousNodeEnv === undefined) {
+                    delete process.env.NODE_ENV;
+                } else {
+                    process.env.NODE_ENV = previousNodeEnv;
+                }
+
+                if (previousFrontendUrl === undefined) {
+                    delete process.env.FRONTEND_URL;
+                } else {
+                    process.env.FRONTEND_URL = previousFrontendUrl;
+                }
+            }
+
+            expect(productionApp.get('trust proxy')).toBe(1);
+
+            const allowedResponse = await request(productionApp)
+                .get('/')
+                .set('Origin', 'https://frontend.example.com');
+
+            expect(allowedResponse.statusCode).toBe(200);
+            expect(
+                allowedResponse.headers['access-control-allow-origin']
+            ).toBe('https://frontend.example.com');
+
+            const blockedResponse = await request(productionApp)
+                .get('/')
+                .set('Origin', 'https://untrusted.example.com');
+
+            expect(blockedResponse.statusCode).toBe(200);
+            expect(
+                blockedResponse.headers['access-control-allow-origin']
+            ).toBeUndefined();
         });
     });
 });
