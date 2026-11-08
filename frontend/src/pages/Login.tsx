@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
@@ -27,8 +26,13 @@ function Login() {
     setError('')
 
     try {
-      await login({ email, password })
-      navigate('/dashboard', { replace: true })
+      const user = await login({ email, password })
+
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
     } catch (err: unknown) {
       const message = (
         err as { response?: { data?: { message?: string } } }
@@ -148,7 +152,7 @@ function Login() {
         </div>
 
         <p className="text-sm text-[#9BAFA3]">
-          Â© 2026 Backend Ledger. Manage money with clarity.
+          © 2026 Backend Ledger. Manage money with clarity.
         </p>
       </section>
 
@@ -241,7 +245,7 @@ function Login() {
             {error && (
               <div
                 role="alert"
-                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                className="w-fit max-w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700"
               >
                 {error}
               </div>
@@ -269,7 +273,7 @@ function Login() {
 
           <p className="mt-10 flex items-center justify-center gap-2 text-center text-xs text-muted">
             <ShieldCheck size={14} />
-            Secure account access Â· Backend Ledger
+            Secure account access · Backend Ledger
           </p>
         </div>
       </section>

@@ -1,12 +1,12 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Eye,
+  FileText,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -93,6 +93,8 @@ const accountStatusStyles: Record<UserAccount['status'], string> = {
 
 function AdminUsers() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const scrollRestoredRef = useRef(false)
 
   const [users, setUsers] = useState<AdminUser[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -112,6 +114,36 @@ function AdminUsers() {
   const [loggingOut, setLoggingOut] = useState(false)
 
   const requestIdRef = useRef(0)
+
+  useEffect(() => {
+    const storageKey = `admin-scroll:${location.pathname}`
+    scrollRestoredRef.current = false
+
+    const saveScrollPosition = () => {
+      sessionStorage.setItem(storageKey, String(window.scrollY))
+    }
+
+    window.addEventListener('scroll', saveScrollPosition, { passive: true })
+    window.addEventListener('beforeunload', saveScrollPosition)
+
+    return () => {
+      saveScrollPosition()
+      window.removeEventListener('scroll', saveScrollPosition)
+      window.removeEventListener('beforeunload', saveScrollPosition)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return
+
+    const storageKey = `admin-scroll:${location.pathname}`
+    const savedPosition = Number(sessionStorage.getItem(storageKey) || 0)
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, savedPosition)
+      scrollRestoredRef.current = true
+    })
+  }, [loading, location.pathname])
 
   const fetchUsers = useCallback(async () => {
     const requestId = ++requestIdRef.current
@@ -147,7 +179,7 @@ function AdminUsers() {
   }, [page, search])
 
   useEffect(() => {
-    fetchUsers()
+    void fetchUsers()
 
     return () => {
       requestIdRef.current += 1
@@ -222,6 +254,11 @@ function AdminUsers() {
         : 'text-[#748078] hover:bg-[#F3F7F3] hover:text-[#176B52]'
     }`
 
+  const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
+    `flex shrink-0 flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold transition ${
+      isActive ? 'text-[#176B52]' : 'text-[#829087]'
+    }`
+
   return (
     <div className="min-h-screen bg-[#F6F9F6] text-[#23352B]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-[#E7EEE8] bg-white px-5 py-6 lg:flex">
@@ -247,7 +284,7 @@ function AdminUsers() {
         </p>
 
         <nav className="space-y-1">
-          <NavLink to="/admin/dashboard" className={navClass}>
+          <NavLink to="/admin/dashboard" end className={navClass}>
             <LayoutDashboard size={18} />
             Dashboard
           </NavLink>
@@ -265,6 +302,11 @@ function AdminUsers() {
           <NavLink to="/admin/accounts" className={navClass}>
             <Wallet size={18} />
             Accounts
+          </NavLink>
+
+          <NavLink to="/admin/audit-logs" className={navClass}>
+            <FileText size={18} />
+            Audit Logs
           </NavLink>
         </nav>
 
@@ -420,7 +462,7 @@ function AdminUsers() {
               </div>
 
               <button
-                onClick={fetchUsers}
+                onClick={() => void fetchUsers()}
                 className="rounded-lg border border-[#E5ECE6] px-3 py-2 text-xs font-semibold text-[#176B52] hover:bg-[#F2F8F3]"
               >
                 Refresh
@@ -430,7 +472,7 @@ function AdminUsers() {
             {error && (
               <div className="m-5 flex items-start justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 <span>{error}</span>
-                <button onClick={() => setError('')}>
+                <button onClick={() => setError('')} aria-label="Dismiss error">
                   <X size={16} />
                 </button>
               </div>
@@ -472,9 +514,7 @@ function AdminUsers() {
                         <th className="whitespace-nowrap px-5 py-4">
                           Joined
                         </th>
-                        <th className="whitespace-nowrap px-5 py-4">
-                          Role
-                        </th>
+                        <th className="whitespace-nowrap px-5 py-4">Role</th>
                         <th className="whitespace-nowrap px-5 py-4 text-right">
                           Details
                         </th>
@@ -526,7 +566,7 @@ function AdminUsers() {
 
                           <td className="whitespace-nowrap px-5 py-4 text-right">
                             <button
-                              onClick={() => openUserDetails(user._id)}
+                              onClick={() => void openUserDetails(user._id)}
                               className="inline-flex items-center gap-1.5 rounded-lg border border-[#DCE9DF] px-3 py-2 text-xs font-bold text-[#176B52] transition hover:bg-[#EDF6EF]"
                             >
                               <Eye size={14} />
@@ -578,44 +618,42 @@ function AdminUsers() {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-[#E7EEE8] bg-white px-2 py-2 lg:hidden">
-        <Link
-          to="/admin/dashboard"
-          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#829087]"
-        >
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around overflow-x-auto border-t border-[#E7EEE8] bg-white px-2 py-2 lg:hidden">
+        <NavLink to="/admin/dashboard" end className={mobileNavClass}>
           <LayoutDashboard size={19} />
           Dashboard
-        </Link>
+        </NavLink>
 
-        <Link
-          to="/admin/transactions"
-          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#829087]"
-        >
+        <NavLink to="/admin/transactions" className={mobileNavClass}>
           <Activity size={19} />
           Transactions
-        </Link>
+        </NavLink>
 
-        <Link
-          to="/admin/users"
-          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-bold text-[#176B52]"
-        >
+        <NavLink to="/admin/users" className={mobileNavClass}>
           <Users size={19} />
           Users
-        </Link>
+        </NavLink>
 
-        <Link
-          to="/admin/accounts"
-          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#829087]"
-        >
+        <NavLink to="/admin/accounts" className={mobileNavClass}>
           <Wallet size={19} />
           Accounts
-        </Link>
+        </NavLink>
+
+        <NavLink to="/admin/audit-logs" className={mobileNavClass}>
+          <FileText size={19} />
+          Audit Logs
+        </NavLink>
 
         <button
-          onClick={handleLogout}
-          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#176B52]"
+          onClick={() => void handleLogout()}
+          disabled={loggingOut}
+          className="flex shrink-0 flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#176B52] disabled:opacity-50"
         >
-          <LogOut size={19} />
+          {loggingOut ? (
+            <Loader2 size={19} className="animate-spin" />
+          ) : (
+            <LogOut size={19} />
+          )}
           Sign out
         </button>
       </nav>
@@ -634,6 +672,7 @@ function AdminUsers() {
               <button
                 onClick={closeDetails}
                 className="rounded-lg p-2 text-[#829087] hover:bg-[#F2F6F2]"
+                aria-label="Close customer details"
               >
                 <X size={20} />
               </button>

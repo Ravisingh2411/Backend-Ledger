@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Activity,
   AlertCircle,
@@ -159,6 +159,14 @@ function Dashboard() {
   const [copiedAccountId, setCopiedAccountId] = useState('')
 
   const isDashboardActive = location.pathname === '/dashboard'
+  const activeSection = location.hash
+
+  const navItemClasses = (active: boolean) =>
+    `flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
+      active
+        ? 'bg-[#EAF3EE] font-semibold text-[#176B52]'
+        : 'font-medium text-[#65736B] hover:bg-[#F4F6F3]'
+    }`
 
   const loadDashboard = useCallback(async (isRefresh = false) => {
     await Promise.resolve()
@@ -242,6 +250,19 @@ function Dashboard() {
       cancelled = true
     }
   }, [loadDashboard])
+
+  useEffect(() => {
+    if (!activeSection) return
+
+    const sectionId = activeSection.slice(1)
+
+    requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }, [activeSection])
 
   const totalBalance = useMemo(
     () =>
@@ -546,13 +567,6 @@ function Dashboard() {
     return 'bg-gray-100 text-gray-600'
   }
 
-  const navItemClasses = (active: boolean) =>
-    `flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
-      active
-        ? 'bg-[#EAF3EE] font-semibold text-[#176B52]'
-        : 'font-medium text-[#65736B] hover:bg-[#F4F6F3]'
-    }`
-
   const accountFilters: {
     label: string
     value: AccountFilter
@@ -565,68 +579,82 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F4F6F3] text-[#17211F]">
-      <div className="min-h-screen">
-        <aside className="fixed left-0 top-0 z-30 hidden h-screen w-[250px] flex-col overflow-y-auto border-r border-[#E5EAE5] bg-white px-5 py-7 lg:flex">
-          <div className="flex items-center gap-3 px-2">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#176B52] text-white">
+      <div className="flex min-h-screen">
+        <aside className="sticky top-0 z-30 flex h-screen w-20 shrink-0 flex-col overflow-y-auto border-r border-[#E5EAE5] bg-white px-3 py-6 lg:w-64 lg:px-5">
+          <Link to="/dashboard" className="flex items-center justify-center gap-3 px-1 lg:justify-start">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#176B52] text-white">
               <Wallet size={23} />
             </div>
-            <div>
-              <h1 className="text-[17px] font-bold tracking-tight">
+            <div className="hidden min-w-0 lg:block">
+              <h1 className="truncate text-[17px] font-bold tracking-tight">
                 Backend Ledger
               </h1>
               <p className="text-xs text-[#829087]">Financial workspace</p>
             </div>
-          </div>
+          </Link>
 
-          <div className="mt-12">
-            <p className="mb-4 px-3 text-[10px] font-bold tracking-[0.16em] text-[#9AA69E]">
+          <div className="mt-10">
+            <p className="mb-4 hidden px-3 text-[10px] font-bold tracking-[0.16em] text-[#9AA69E] lg:block">
               WORKSPACE
             </p>
 
             <nav className="space-y-1">
-              <Link
+              <NavLink
                 to="/dashboard"
-                className={navItemClasses(isDashboardActive)}
+                end
+                title="Dashboard"
+                className={({ isActive }) =>
+                  navItemClasses(isActive && !activeSection)
+                }
               >
-                <LayoutDashboard size={18} />
-                Overview
-              </Link>
+                <LayoutDashboard size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Dashboard</span>
+              </NavLink>
 
-              <a href="#accounts" className={navItemClasses(false)}>
-                <Wallet size={18} />
-                Accounts
+              <a
+                href="#accounts"
+                title="Accounts"
+                className={navItemClasses(
+                  isDashboardActive && activeSection === '#accounts'
+                )}
+              >
+                <Wallet size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Accounts</span>
               </a>
 
-              <a href="#transfer" className={navItemClasses(false)}>
-                <ArrowLeftRight size={18} />
-                Transfers
+              <a
+                href="#transfer"
+                title="Transfers"
+                className={navItemClasses(
+                  isDashboardActive && activeSection === '#transfer'
+                )}
+              >
+                <ArrowLeftRight size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Transfers</span>
               </a>
 
-              <Link
+              <NavLink
                 to="/transactions"
-                className={navItemClasses(
-                  location.pathname === '/transactions'
-                )}
+                title="Transactions"
+                className={({ isActive }) => navItemClasses(isActive)}
               >
-                <ReceiptText size={18} />
-                Transactions
-              </Link>
+                <ReceiptText size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Transactions</span>
+              </NavLink>
 
-              <Link
+              <NavLink
                 to="/analytics"
-                className={navItemClasses(
-                  location.pathname === '/analytics'
-                )}
+                title="Analytics"
+                className={({ isActive }) => navItemClasses(isActive)}
               >
-                <BarChart3 size={18} />
-                Analytics
-              </Link>
+                <BarChart3 size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Analytics</span>
+              </NavLink>
             </nav>
           </div>
 
-          <div className="mt-auto pt-8">
-            <div className="rounded-2xl bg-[#F1F5F1] p-4">
+          <div className="mt-auto pt-6">
+            <div className="mb-5 hidden rounded-2xl bg-[#F1F5F1] p-4 lg:block">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <ShieldCheck size={17} className="text-[#176B52]" />
                 Ledger security
@@ -636,32 +664,30 @@ function Dashboard() {
               </p>
             </div>
 
-            <div className="mt-5 border-t border-[#E5EAE5] pt-5">
+            <div className="border-t border-[#E5EAE5] pt-5">
               <button
                 onClick={() => void logout()}
-                className="flex w-full items-center gap-3 rounded-xl border border-[#F0DDDD] px-3 py-3 text-sm font-semibold text-[#A33D3D] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                title="Sign out"
+                aria-label="Sign out"
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F0DDDD] px-3 py-3 text-sm font-semibold text-[#A33D3D] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 lg:justify-start"
               >
-                <LogOut size={18} />
-                Sign out
+                <LogOut size={19} className="shrink-0" />
+                <span className="hidden lg:inline">Sign out</span>
               </button>
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 lg:ml-[250px]">
+        <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E5EAE5] bg-white/95 px-5 py-4 backdrop-blur sm:px-8 lg:px-10">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#176B52] text-white lg:hidden">
-                <Wallet size={21} />
-              </div>
-
               <div>
                 <p className="text-sm font-bold">Backend Ledger</p>
                 <p className="text-xs text-[#829087]">Your financial overview</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="hidden min-w-0 text-right sm:block">
                 <p className="truncate text-sm font-semibold">
                   {user?.name}
@@ -671,18 +697,9 @@ function Dashboard() {
                 </p>
               </div>
 
-              <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52] sm:flex">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52]">
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
               </div>
-
-              <button
-                onClick={() => void logout()}
-                className="rounded-lg p-2 text-[#718078] transition hover:bg-red-50 hover:text-red-600 lg:hidden"
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut size={19} />
-              </button>
             </div>
           </header>
 

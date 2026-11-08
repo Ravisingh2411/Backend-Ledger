@@ -14,6 +14,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminTransactions = lazy(() => import('./pages/AdminTransactions'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 const AdminAccounts = lazy(() => import('./pages/AdminAccounts'))
+const AdminAuditLogs = lazy(() => import('./pages/AdminAuditLogs'))
 
 const PageLoader = () => (
   <div className="flex min-h-screen items-center justify-center bg-[#F6F9F6]">
@@ -56,6 +57,10 @@ function App() {
             <Route
               path="/admin/accounts"
               element={<AdminAccounts />}
+            />
+            <Route
+              path="/admin/audit-logs"
+              element={<AdminAuditLogs />}
             />
           </Route>
 

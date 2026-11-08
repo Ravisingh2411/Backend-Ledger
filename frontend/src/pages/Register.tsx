@@ -135,7 +135,7 @@ function Register() {
         </div>
 
         <p className="text-sm text-[#9BAFA3]">
-          Â© 2026 Backend Ledger. Manage money with clarity.
+          © 2026 Backend Ledger. Manage money with clarity.
         </p>
       </section>
 
@@ -304,7 +304,7 @@ function Register() {
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-xs text-muted">
             <ShieldCheck size={14} />
-            Secure account access Â· Backend Ledger
+            Secure account access · Backend Ledger
           </p>
         </div>
       </section>

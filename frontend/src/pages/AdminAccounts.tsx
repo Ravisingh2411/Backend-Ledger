@@ -1,12 +1,12 @@
-
-import { useCallback, useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Activity,
   Building2,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Eye,
   LayoutDashboard,
   Loader2,
@@ -79,6 +79,9 @@ const getInitials = (name: string) =>
     .toUpperCase()
 
 function AdminAccounts() {
+  const location = useLocation()
+  const restoredPathRef = useRef<string | null>(null)
+
   const [accounts, setAccounts] = useState<AdminAccount[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [page, setPage] = useState(1)
@@ -94,6 +97,34 @@ function AdminAccounts() {
   const [actionError, setActionError] = useState('')
   const [actionSuccess, setActionSuccess] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
+
+  const scrollStorageKey = `admin-scroll:${location.pathname}`
+
+  useEffect(() => {
+    const saveScrollPosition = () => {
+      sessionStorage.setItem(scrollStorageKey, String(window.scrollY))
+    }
+
+    window.addEventListener('scroll', saveScrollPosition, { passive: true })
+
+    return () => {
+      saveScrollPosition()
+      window.removeEventListener('scroll', saveScrollPosition)
+    }
+  }, [scrollStorageKey])
+
+  useEffect(() => {
+    if (loading || restoredPathRef.current === location.pathname) return
+
+    restoredPathRef.current = location.pathname
+
+    const savedPosition = sessionStorage.getItem(scrollStorageKey)
+    const scrollY = savedPosition ? Number(savedPosition) : 0
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo(0, Number.isFinite(scrollY) ? scrollY : 0)
+    })
+  }, [loading, location.pathname, scrollStorageKey])
 
   const fetchAccounts = useCallback(async () => {
     try {
@@ -126,7 +157,6 @@ function AdminAccounts() {
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     setPage(1)
     setSearch(searchInput.trim())
   }
@@ -135,7 +165,6 @@ function AdminAccounts() {
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const value = event.target.value
-
     setSearchInput(value)
     setSearch(value.trim())
     setPage(1)
@@ -190,7 +219,9 @@ function AdminAccounts() {
         { status: targetStatus },
       )
 
-      setActionSuccess(response.data.message || `Account status changed to ${targetStatus}.`)
+      setActionSuccess(
+        response.data.message || `Account status changed to ${targetStatus}.`,
+      )
 
       await fetchAccounts()
 
@@ -223,6 +254,11 @@ function AdminAccounts() {
       isActive
         ? 'bg-[#E8F3EC] text-[#176B52]'
         : 'text-[#748078] hover:bg-[#F3F7F3] hover:text-[#176B52]'
+    }`
+
+  const mobileNavClass = ({ isActive }: { isActive: boolean }) =>
+    `flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold transition ${
+      isActive ? 'text-[#176B52]' : 'text-[#829087]'
     }`
 
   const availableActions = (account: AdminAccount): AccountStatus[] => {
@@ -259,8 +295,9 @@ function AdminAccounts() {
         <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#A0AAA3]">
           Workspace
         </p>
+
         <nav className="space-y-1">
-          <NavLink to="/admin/dashboard" className={navClass}>
+          <NavLink to="/admin/dashboard" end className={navClass}>
             <LayoutDashboard size={18} /> Dashboard
           </NavLink>
           <NavLink to="/admin/transactions" className={navClass}>
@@ -272,6 +309,9 @@ function AdminAccounts() {
           <NavLink to="/admin/accounts" className={navClass}>
             <Building2 size={18} /> Accounts
           </NavLink>
+          <NavLink to="/admin/audit-logs" className={navClass}>
+            <ClipboardList size={18} /> Audit Logs
+          </NavLink>
         </nav>
 
         <div className="mt-auto">
@@ -281,7 +321,11 @@ function AdminAccounts() {
             className="flex w-full items-center gap-3 rounded-xl bg-[#F0F7F1] px-4 py-3 text-left transition hover:bg-[#E5F1E7] disabled:opacity-60"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#DCEFE0] text-[#176B52]">
-              {loggingOut ? <Loader2 size={17} className="animate-spin" /> : <LogOut size={17} />}
+              {loggingOut ? (
+                <Loader2 size={17} className="animate-spin" />
+              ) : (
+                <LogOut size={17} />
+              )}
             </span>
             <span>
               <span className="block text-sm font-bold text-[#176B52]">Sign out</span>
@@ -382,13 +426,18 @@ function AdminAccounts() {
           {actionError && (
             <div className="flex items-start justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               <span>{actionError}</span>
-              <button onClick={() => setActionError('')}><X size={16} /></button>
+              <button onClick={() => setActionError('')}>
+                <X size={16} />
+              </button>
             </div>
           )}
+
           {actionSuccess && (
             <div className="flex items-start justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
               <span>{actionSuccess}</span>
-              <button onClick={() => setActionSuccess('')}><X size={16} /></button>
+              <button onClick={() => setActionSuccess('')}>
+                <X size={16} />
+              </button>
             </div>
           )}
 
@@ -530,21 +579,29 @@ function AdminAccounts() {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-[#E7EEE8] bg-white px-2 py-2 lg:hidden">
-        <Link to="/admin/dashboard" className="flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-semibold text-[#829087]">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-[#E7EEE8] bg-white px-1 py-2 lg:hidden">
+        <NavLink to="/admin/dashboard" end className={mobileNavClass}>
           <LayoutDashboard size={19} /> Dashboard
-        </Link>
-        <Link to="/admin/transactions" className="flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-semibold text-[#829087]">
+        </NavLink>
+        <NavLink to="/admin/transactions" className={mobileNavClass}>
           <Activity size={19} /> Transactions
-        </Link>
-        <Link to="/admin/users" className="flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-semibold text-[#829087]">
+        </NavLink>
+        <NavLink to="/admin/users" className={mobileNavClass}>
           <Users size={19} /> Users
-        </Link>
-        <Link to="/admin/accounts" className="flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-bold text-[#176B52]">
+        </NavLink>
+        <NavLink to="/admin/accounts" className={mobileNavClass}>
           <Building2 size={19} /> Accounts
-        </Link>
-        <button onClick={handleLogout} className="flex flex-col items-center gap-1 px-3 py-1 text-[10px] font-semibold text-[#176B52]">
-          <LogOut size={19} /> Sign out
+        </NavLink>
+        <NavLink to="/admin/audit-logs" className={mobileNavClass}>
+          <ClipboardList size={19} /> Audit Logs
+        </NavLink>
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex flex-col items-center gap-1 px-2 py-1 text-[10px] font-semibold text-[#176B52] disabled:opacity-50"
+        >
+          {loggingOut ? <Loader2 size={19} className="animate-spin" /> : <LogOut size={19} />}
+          Sign out
         </button>
       </nav>
 

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState, type ReactNode } from 'react'
+﻿
+import { useEffect, useState, type ReactNode } from 'react'
 import AuthContext from './auth-context'
 import api from '../services/api'
 import type {
@@ -15,7 +16,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
-    // Remove old authentication data from localStorage.
     localStorage.removeItem('token')
     localStorage.removeItem('user')
 
@@ -44,11 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const saveAuthData = (data: AuthResponse) => {
+  const saveAuthData = (data: AuthResponse): User => {
     setUser(data.user)
+    return data.user
   }
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (
+    credentials: LoginCredentials
+  ): Promise<User> => {
     setLoading(true)
 
     try {
@@ -57,13 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials
       )
 
-      saveAuthData(response.data)
+      return saveAuthData(response.data)
     } finally {
       setLoading(false)
     }
   }
 
-  const register = async (credentials: RegisterCredentials) => {
+  const register = async (
+    credentials: RegisterCredentials
+  ): Promise<User> => {
     setLoading(true)
 
     try {
@@ -72,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials
       )
 
-      saveAuthData(response.data)
+      return saveAuthData(response.data)
     } finally {
       setLoading(false)
     }

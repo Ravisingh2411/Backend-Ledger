@@ -18,6 +18,12 @@ const {
     getAdminTransactionDetailsController
 } = require('../controllers/admin-transaction.controller');
 
+const {
+    getAdminAuditLogsController
+} = require('../controllers/admin-audit.controller');
+
+const auditAdminAccountStatus = require('../middlewares/admin-audit.middleware');
+
 const router = express.Router();
 
 router.use(authAdminMiddleware);
@@ -29,8 +35,10 @@ router.get('/users/:userId', getAdminUserDetailsController);
 
 router.get('/accounts', getAdminAccountsController);
 router.get('/accounts/:accountId', getAdminAccountDetailsController);
+
 router.patch(
     '/accounts/:accountId/status',
+    auditAdminAccountStatus,
     updateAdminAccountStatusController
 );
 
@@ -39,5 +47,7 @@ router.get(
     '/transactions/:transactionId',
     getAdminTransactionDetailsController
 );
+
+router.get('/audit-logs', getAdminAuditLogsController);
 
 module.exports = router;

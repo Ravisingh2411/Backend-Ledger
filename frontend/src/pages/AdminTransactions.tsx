@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Activity,
   ArrowDownLeft,
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
+  FileText,
   LayoutDashboard,
   LogOut,
   ReceiptText,
@@ -113,6 +114,8 @@ function getErrorMessage(err: unknown, fallback: string) {
 
 function AdminTransactions() {
   const { user, logout } = useAuth()
+  const location = useLocation()
+  const scrollRestoredRef = useRef(false)
 
   const [transactions, setTransactions] = useState<AdminTransaction[]>([])
   const [pagination, setPagination] = useState<Pagination>(emptyPagination)
@@ -129,6 +132,36 @@ function AdminTransactions() {
   const [selectedTransaction, setSelectedTransaction] =
     useState<AdminTransaction | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+
+  useEffect(() => {
+    const storageKey = `admin-scroll:${location.pathname}`
+    scrollRestoredRef.current = false
+
+    const saveScrollPosition = () => {
+      sessionStorage.setItem(storageKey, String(window.scrollY))
+    }
+
+    window.addEventListener('scroll', saveScrollPosition, { passive: true })
+    window.addEventListener('beforeunload', saveScrollPosition)
+
+    return () => {
+      saveScrollPosition()
+      window.removeEventListener('scroll', saveScrollPosition)
+      window.removeEventListener('beforeunload', saveScrollPosition)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return
+
+    const storageKey = `admin-scroll:${location.pathname}`
+    const savedPosition = Number(sessionStorage.getItem(storageKey) || 0)
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, savedPosition)
+      scrollRestoredRef.current = true
+    })
+  }, [loading, location.pathname])
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true)
@@ -147,14 +180,14 @@ function AdminTransactions() {
 
       const response = await api.get<TransactionResponse>(
         '/admin/transactions',
-        { params }
+        { params },
       )
 
       setTransactions(response.data.transactions || [])
       setPagination(response.data.pagination || emptyPagination)
     } catch (err: unknown) {
       setError(
-        getErrorMessage(err, 'Unable to load transactions. Please try again.')
+        getErrorMessage(err, 'Unable to load transactions. Please try again.'),
       )
       setTransactions([])
     } finally {
@@ -173,14 +206,12 @@ function AdminTransactions() {
 
     try {
       const response = await api.get<{ transaction: AdminTransaction }>(
-        `/admin/transactions/${transactionId}`
+        `/admin/transactions/${transactionId}`,
       )
 
       setSelectedTransaction(response.data.transaction)
     } catch (err: unknown) {
-      setError(
-        getErrorMessage(err, 'Unable to load transaction details.')
-      )
+      setError(getErrorMessage(err, 'Unable to load transaction details.'))
     } finally {
       setDetailLoading(false)
     }
@@ -201,6 +232,13 @@ function AdminTransactions() {
         : 'font-medium text-[#65736B] hover:bg-[#F4F6F3]'
     }`
 
+  const mobileNavItemClasses = ({ isActive }: { isActive: boolean }) =>
+    `inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+      isActive
+        ? 'bg-[#EAF3EE] text-[#176B52]'
+        : 'text-[#65736B] hover:bg-[#F4F6F3]'
+    }`
+
   const inputClasses =
     'h-11 w-full min-w-0 rounded-xl border border-[#DCE4DD] bg-white px-3 text-sm text-[#405047] outline-none transition focus:border-[#176B52] focus:ring-2 focus:ring-[#176B52]/10'
 
@@ -216,9 +254,7 @@ function AdminTransactions() {
             <h1 className="text-[17px] font-bold tracking-tight">
               Backend Ledger
             </h1>
-            <p className="text-xs text-[#829087]">
-              Financial workspace
-            </p>
+            <p className="text-xs text-[#829087]">Financial workspace</p>
           </div>
         </Link>
 
@@ -228,7 +264,7 @@ function AdminTransactions() {
           </p>
 
           <nav className="space-y-1">
-            <NavLink to="/admin/dashboard" className={navItemClasses}>
+            <NavLink to="/admin/dashboard" end className={navItemClasses}>
               <LayoutDashboard size={18} />
               Dashboard
             </NavLink>
@@ -246,6 +282,11 @@ function AdminTransactions() {
             <NavLink to="/admin/accounts" className={navItemClasses}>
               <Wallet size={18} />
               Accounts
+            </NavLink>
+
+            <NavLink to="/admin/audit-logs" className={navItemClasses}>
+              <FileText size={18} />
+              Audit Logs
             </NavLink>
           </nav>
         </div>
@@ -319,13 +360,8 @@ function AdminTransactions() {
         <nav className="flex items-center gap-2 overflow-x-auto border-b border-[#E5EAE5] bg-white px-5 py-3 lg:hidden">
           <NavLink
             to="/admin/dashboard"
-            className={({ isActive }) =>
-              `inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                isActive
-                  ? 'bg-[#EAF3EE] text-[#176B52]'
-                  : 'text-[#65736B] hover:bg-[#F4F6F3]'
-              }`
-            }
+            end
+            className={mobileNavItemClasses}
           >
             <LayoutDashboard size={16} />
             Dashboard
@@ -333,44 +369,25 @@ function AdminTransactions() {
 
           <NavLink
             to="/admin/transactions"
-            className={({ isActive }) =>
-              `inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                isActive
-                  ? 'bg-[#EAF3EE] text-[#176B52]'
-                  : 'text-[#65736B] hover:bg-[#F4F6F3]'
-              }`
-            }
+            className={mobileNavItemClasses}
           >
             <ReceiptText size={16} />
             Transactions
           </NavLink>
 
-          <NavLink
-            to="/admin/users"
-            className={({ isActive }) =>
-              `inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                isActive
-                  ? 'bg-[#EAF3EE] text-[#176B52]'
-                  : 'text-[#65736B] hover:bg-[#F4F6F3]'
-              }`
-            }
-          >
+          <NavLink to="/admin/users" className={mobileNavItemClasses}>
             <Users size={16} />
             Users
           </NavLink>
 
-          <NavLink
-            to="/admin/accounts"
-            className={({ isActive }) =>
-              `inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                isActive
-                  ? 'bg-[#EAF3EE] text-[#176B52]'
-                  : 'text-[#65736B] hover:bg-[#F4F6F3]'
-              }`
-            }
-          >
+          <NavLink to="/admin/accounts" className={mobileNavItemClasses}>
             <Wallet size={16} />
             Accounts
+          </NavLink>
+
+          <NavLink to="/admin/audit-logs" className={mobileNavItemClasses}>
+            <FileText size={16} />
+            Audit Logs
           </NavLink>
         </nav>
 
@@ -444,9 +461,7 @@ function AdminTransactions() {
                   / {pagination.totalPages || 1}
                 </span>
               </p>
-              <p className="mt-2 text-xs text-[#829087]">
-                Transaction pages
-              </p>
+              <p className="mt-2 text-xs text-[#829087]">Transaction pages</p>
             </div>
 
             <div className="rounded-2xl border border-[#E4EAE4] bg-white p-6">
@@ -753,10 +768,7 @@ function AdminTransactions() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
-            if (
-              event.target === event.currentTarget &&
-              !detailLoading
-            ) {
+            if (event.target === event.currentTarget && !detailLoading) {
               setSelectedTransaction(null)
             }
           }}
@@ -799,9 +811,7 @@ function AdminTransactions() {
                 </div>
 
                 <div className="mt-6 rounded-2xl bg-[#176B52] p-5 text-white">
-                  <p className="text-sm text-white/75">
-                    Transaction amount
-                  </p>
+                  <p className="text-sm text-white/75">Transaction amount</p>
                   <p className="mt-2 text-3xl font-bold">
                     {formatCurrency(selectedTransaction.amount)}
                   </p>

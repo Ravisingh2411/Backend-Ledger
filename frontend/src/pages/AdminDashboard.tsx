@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Activity,
   ArrowUpRight,
   Building2,
   CheckCircle2,
+  ClipboardList,
   Clock3,
   CreditCard,
   LayoutDashboard,
@@ -14,7 +16,7 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
 interface TransactionCategory {
@@ -93,6 +95,8 @@ const getStatusStyle = (status: string) => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const restoredPath = useRef('')
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -100,6 +104,44 @@ const AdminDashboard = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardError, setDashboardError] = useState('')
   const [transactionsError, setTransactionsError] = useState('')
+
+  useEffect(() => {
+    const storageKey = `admin-scroll:${location.pathname}`
+
+    const saveScrollPosition = () => {
+      sessionStorage.setItem(storageKey, String(window.scrollY))
+    }
+
+    window.addEventListener('scroll', saveScrollPosition, {
+      passive: true,
+    })
+
+    return () => {
+      saveScrollPosition()
+      window.removeEventListener('scroll', saveScrollPosition)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (loading || restoredPath.current === location.pathname) {
+      return
+    }
+
+    restoredPath.current = location.pathname
+
+    const storageKey = `admin-scroll:${location.pathname}`
+    const savedPosition = sessionStorage.getItem(storageKey)
+
+    if (savedPosition === null) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo(0, Number(savedPosition) || 0)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [loading, location.pathname])
 
   const fetchDashboard = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -317,6 +359,14 @@ const AdminDashboard = () => {
               <Wallet size={19} />
               Accounts
             </Link>
+
+            <Link
+              to="/admin/audit-logs"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#758179] transition hover:bg-[#F3F7F4] hover:text-[#176B52]"
+            >
+              <ClipboardList size={19} />
+              Audit Logs
+            </Link>
           </nav>
         </div>
 
@@ -364,7 +414,7 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1500px] space-y-7 px-5 py-8 sm:px-8 lg:px-10">
+        <div className="mx-auto max-w-[1500px] space-y-7 px-5 py-8 pb-24 sm:px-8 lg:px-10 lg:pb-8">
           <section className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-medium text-[#829087]">
@@ -836,13 +886,13 @@ const AdminDashboard = () => {
           <span className="text-[10px] font-semibold">Accounts</span>
         </Link>
 
-        <button
-          onClick={handleLogout}
-          className="flex flex-1 flex-col items-center gap-1 text-[#176B52]"
+        <Link
+          to="/admin/audit-logs"
+          className="flex flex-1 flex-col items-center gap-1 text-[#829087]"
         >
-          <LogOut size={20} />
-          <span className="text-[10px] font-semibold">Sign out</span>
-        </button>
+          <ClipboardList size={20} />
+          <span className="text-[10px] font-semibold">Audit Logs</span>
+        </Link>
       </div>
     </div>
   )
