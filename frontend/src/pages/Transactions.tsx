@@ -619,9 +619,14 @@ export default function Transactions() {
 
       <main className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#e5ebe6] bg-white/95 px-5 py-4 backdrop-blur sm:px-8 lg:px-10">
-          <div>
-            <p className="text-sm font-bold">Backend Ledger</p>
-            <p className="text-xs text-[#829087]">Your financial workspace</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#176B52] text-white">
+              <Wallet size={21} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[#26382E]">Backend Ledger</p>
+              <p className="text-xs text-[#829087]">Financial workspace</p>
+            </div>
           </div>
 
           <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
