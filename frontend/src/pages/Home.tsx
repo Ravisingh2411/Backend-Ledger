@@ -283,17 +283,6 @@ function Home() {
         </div>
       </section>
 
-      <section className="px-5 pb-20 sm:px-8 sm:pb-24 lg:px-10">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-[#173B2D] px-7 py-12 text-center sm:px-12 sm:py-16">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-[#C4DDCC]"><WalletCards size={24} /></div>
-          <h2 className="mx-auto mt-6 max-w-2xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">A better view of your finances starts here.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[#C1CEC6] sm:text-base">Bring your accounts and activity together in one organized financial workspace.</p>
-          <a href="#product" className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-6 text-sm font-bold text-[#176B52] transition hover:bg-[#EAF2EB]">
-            Explore the workspace <ArrowUpRight size={17} />
-          </a>
-        </div>
-      </section>
-
       <footer className="border-t border-[#E5EBE5] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
           <Link to="/" className="flex items-center gap-2.5 text-sm font-bold text-[#20352B]">
