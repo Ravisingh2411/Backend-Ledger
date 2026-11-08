@@ -44,7 +44,7 @@ const PAGE_SIZE = 8
 const SCROLL_STORAGE_KEY = 'backend-ledger-transactions-scroll'
 
 const navigationItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Overview', to: '/dashboard', icon: LayoutDashboard },
   { label: 'Transactions', to: '/transactions', icon: ReceiptText },
   { label: 'Analytics', to: '/analytics', icon: BarChart3 },
 ]
@@ -609,7 +609,7 @@ export default function Transactions() {
           <button
             onClick={() => void logout()}
             title="Sign out"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#f2d5d5] px-3 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 lg:justify-start"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#CFE4D5] bg-[#F5FAF6] px-3 py-3 text-sm font-semibold text-[#176B52] transition hover:border-[#A9D0B5] hover:bg-[#EAF3EE] lg:justify-start"
           >
             <LogOut size={19} className="shrink-0" />
             <span className="hidden lg:block">Sign out</span>
@@ -624,12 +624,11 @@ export default function Transactions() {
             <p className="text-xs text-[#829087]">Your financial workspace</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
             <div className="hidden min-w-0 text-right sm:block">
               <p className="truncate text-sm font-semibold">{user?.name}</p>
               <p className="truncate text-xs text-[#829087]">{user?.email}</p>
             </div>
-
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e4efe8] text-sm font-bold text-[#176b4a]">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
