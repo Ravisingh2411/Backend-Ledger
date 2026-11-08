@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   Eye,
@@ -14,6 +14,7 @@ import { useAuth } from '../context/useAuth'
 
 function Login() {
   const { login, loading } = useAuth()
+  const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,8 +28,9 @@ function Login() {
     try {
       const user = await login({ email, password })
 
-      window.location.replace(
-        user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
+      navigate(
+        user.role === 'admin' ? '/admin/dashboard' : '/dashboard',
+        { replace: true }
       )
     } catch (err: unknown) {
       const message = (
