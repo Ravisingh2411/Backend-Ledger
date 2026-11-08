@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -13,8 +13,15 @@ import {
 import { useAuth } from '../context/useAuth'
 
 function Login() {
-  const { login, loading } = useAuth()
+  const { login, loading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [redirectPath, setRedirectPath] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (redirectPath && isAuthenticated) {
+      navigate(redirectPath, { replace: true })
+    }
+  }, [redirectPath, isAuthenticated, navigate])
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,9 +35,8 @@ function Login() {
     try {
       const user = await login({ email, password })
 
-      navigate(
-        user.role === 'admin' ? '/admin/dashboard' : '/dashboard',
-        { replace: true }
+      setRedirectPath(
+        user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
       )
     } catch (err: unknown) {
       const message = (
