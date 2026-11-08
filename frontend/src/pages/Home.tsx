@@ -112,10 +112,7 @@ function Home() {
               <Link to={isAuthenticated ? '/dashboard' : '/register'} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#176B52] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(23,107,82,0.2)] transition hover:-translate-y-0.5 hover:bg-[#12543F]">
                 {isAuthenticated ? 'Go to dashboard' : 'Create your account'} <ArrowRight size={17} />
               </Link>
-              <a href="#product" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D8E4DA] bg-white/90 px-6 text-sm font-bold text-[#34483D] transition hover:border-[#B8CEBE] hover:bg-white">
-                Take a product tour <ArrowDownLeft size={17} />
-              </a>
-            </div>
+                          </div>
 
             <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#718078] sm:text-sm">
               <span className="inline-flex items-center gap-2"><LockKeyhole size={15} className="text-[#267A5B]" /> Protected sign-in</span>
@@ -305,7 +302,6 @@ function Home() {
           </Link>
           <p className="text-xs text-[#87948B]">© {new Date().getFullYear()} Backend Ledger. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-5 text-xs font-medium text-[#718078]">
-            <a href="#product" className="hover:text-[#176B52]">Product tour</a>
             <Link to="/login" className="hover:text-[#176B52]">Sign in</Link>
           </div>
         </div>
