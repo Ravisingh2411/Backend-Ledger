@@ -41,6 +41,7 @@ interface Transaction {
   toAccount: AccountReference
   amount: number
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REVERSED'
+  transactionType?: 'TRANSFER' | 'WELCOME_BONUS'
   createdAt: string
 }
 
@@ -187,10 +188,17 @@ export default function Analytics() {
     completedTransactions.forEach(transaction => {
       const from = getAccountId(transaction.fromAccount)
       const to = getAccountId(transaction.toAccount)
+      const fromIsOwned = accountIds.includes(from)
+      const toIsOwned = accountIds.includes(to)
 
-      if (accountIds.includes(from)) {
+      if (transaction.transactionType === 'WELCOME_BONUS') {
+        incoming += transaction.amount
+      } else if (fromIsOwned && toIsOwned) {
+        // Own-account transfers are internal movements, not customer spending.
+        return
+      } else if (fromIsOwned) {
         outgoing += transaction.amount
-      } else if (accountIds.includes(to)) {
+      } else if (toIsOwned) {
         incoming += transaction.amount
       }
     })
@@ -224,10 +232,17 @@ export default function Analytics() {
 
       const from = getAccountId(transaction.fromAccount)
       const to = getAccountId(transaction.toAccount)
+      const fromIsOwned = accountIds.includes(from)
+      const toIsOwned = accountIds.includes(to)
 
-      if (accountIds.includes(from)) {
+      if (transaction.transactionType === 'WELCOME_BONUS') {
+        month.incoming += transaction.amount
+      } else if (fromIsOwned && toIsOwned) {
+        // Own-account transfers are excluded from customer-level cash flow.
+        return
+      } else if (fromIsOwned) {
         month.outgoing += transaction.amount
-      } else if (accountIds.includes(to)) {
+      } else if (toIsOwned) {
         month.incoming += transaction.amount
       }
     })
