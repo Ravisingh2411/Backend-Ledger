@@ -41,7 +41,7 @@ function Register() {
 
     try {
       await register({ name, email, password })
-      navigate('/dashboard', { replace: true })
+      window.location.replace('/dashboard')
     } catch (err: unknown) {
       const message = (
         err as { response?: { data?: { message?: string } } }
