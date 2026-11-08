@@ -55,7 +55,7 @@ interface AccountsResponse {
 const SCROLL_STORAGE_KEY = 'backend-ledger-analytics-scroll'
 
 const navigationItems = [
-  { label: 'Overview', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Overview', to: '/dashboard#overview', icon: LayoutDashboard },
   { label: 'Transactions', to: '/transactions', icon: ReceiptText },
   { label: 'Analytics', to: '/analytics', icon: BarChart3 },
 ]
