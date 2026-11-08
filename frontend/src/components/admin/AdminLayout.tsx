@@ -120,8 +120,8 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        <div className="flex justify-end px-5 pt-4 sm:px-8 lg:px-10">
-          <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
+        <div className="pointer-events-none fixed right-5 top-3 z-50 flex justify-end sm:right-8 lg:right-10">
+          <div className="pointer-events-auto flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52]">
               {initials}
             </div>
