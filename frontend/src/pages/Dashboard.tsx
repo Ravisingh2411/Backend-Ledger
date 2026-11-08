@@ -263,13 +263,22 @@ function Dashboard() {
     if (!activeSection) return
 
     const sectionId = activeSection.slice(1)
+    let frame = 0
+    let secondFrame = 0
 
-    requestAnimationFrame(() => {
-      document.getElementById(sectionId)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
+    frame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        document.getElementById(sectionId)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
       })
     })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      cancelAnimationFrame(secondFrame)
+    }
   }, [activeSection, loading])
 
   const totalBalance = useMemo(
@@ -613,11 +622,11 @@ function Dashboard() {
 
             <nav className="space-y-1">
               <NavLink
-                to="/dashboard"
+                to="/dashboard#overview"
                 end
                 title="Overview"
                 className={({ isActive }) =>
-                  navItemClasses(isActive && !activeSection)
+                  navItemClasses(isActive && (!activeSection || activeSection === "#overview"))
                 }
               >
                 <LayoutDashboard size={19} className="shrink-0" />
