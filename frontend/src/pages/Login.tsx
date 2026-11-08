@@ -264,8 +264,9 @@ function Login() {
           <p className="mt-8 text-center text-sm text-muted">
             Don't have an account?{' '}
             <Link
+              reloadDocument
               to="/register"
-              className="font-semibold text-brand hover:underline"
+              className="relative z-10 pointer-events-auto font-semibold text-brand hover:underline"
             >
               Create account
             </Link>
