@@ -9,7 +9,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
-import { useAuth } from '../context/useAuth'
+import { useAuth } from '../../context/useAuth'
 import './AdminLayout.css'
 
 const navigation = [
@@ -52,7 +52,7 @@ const AdminLayout = () => {
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
-    .map(part => part.charAt(0).toUpperCase())
+    .map((part: string) => part.charAt(0).toUpperCase())
     .join('') || 'A'
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
