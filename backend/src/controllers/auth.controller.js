@@ -8,6 +8,7 @@ const tokenBlackListModel = require('../models/blackList.model');
 
 const TOKEN_EXPIRY = '3d';
 const TOKEN_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
+const LOGIN_QUERY_TIMEOUT_MS = 10000;
 
 const cookieOptions = {
     httpOnly: true,
@@ -133,44 +134,83 @@ async function userRegisterController(req, res) {
 }
 
 async function userLoginController(req, res) {
-    const validation = loginSchema.safeParse(req.body);
+    const requestStartedAt = Date.now();
+    let stage = 'validation';
 
-    if (!validation.success) {
-        return res.status(400).json({
-            message: 'Invalid login details',
-            errors: validation.error.issues.map(issue => ({
-                field: issue.path.join('.'),
-                message: issue.message
-            }))
+    console.info('[AUTH LOGIN] Controller started');
+
+    try {
+        const validation = loginSchema.safeParse(req.body);
+
+        if (!validation.success) {
+            console.warn('[AUTH LOGIN] Request validation failed');
+            return res.status(400).json({
+                message: 'Invalid login details',
+                errors: validation.error.issues.map(issue => ({
+                    field: issue.path.join('.'),
+                    message: issue.message
+                }))
+            });
+        }
+
+        const { email, password } = validation.data;
+
+        stage = 'database-user-lookup';
+        console.info('[AUTH LOGIN] Starting database user lookup');
+
+        const user = await userModel
+            .findOne({ email })
+            .select('+password')
+            .maxTimeMS(LOGIN_QUERY_TIMEOUT_MS)
+            .exec();
+
+        console.info(
+            `[AUTH LOGIN] Database user lookup completed in ${Date.now() - requestStartedAt}ms`
+        );
+
+        if (!user) {
+            console.warn('[AUTH LOGIN] User lookup completed: no matching user');
+            return res.status(401).json({
+                message: 'Email or password is invalid'
+            });
+        }
+
+        stage = 'password-comparison';
+        console.info('[AUTH LOGIN] Starting password comparison');
+
+        const isValidPassword = await user.comparePassword(password);
+
+        console.info(
+            `[AUTH LOGIN] Password comparison completed in ${Date.now() - requestStartedAt}ms`
+        );
+
+        if (!isValidPassword) {
+            console.warn('[AUTH LOGIN] Password comparison failed');
+            return res.status(401).json({
+                message: 'Email or password is invalid'
+            });
+        }
+
+        stage = 'token-generation';
+        const token = createToken(user._id);
+
+        res.cookie('token', token, cookieOptions);
+
+        console.info(
+            `[AUTH LOGIN] Login successful; sending response after ${Date.now() - requestStartedAt}ms`
+        );
+
+        return res.status(200).json({
+            user: getPublicUser(user),
+            token
         });
+    } catch (error) {
+        console.error(
+            `[AUTH LOGIN] Failed during stage "${stage}" after ${Date.now() - requestStartedAt}ms:`,
+            error
+        );
+        throw error;
     }
-
-    const { email, password } = validation.data;
-
-    const user = await userModel.findOne({ email }).select('+password');
-
-    if (!user) {
-        return res.status(401).json({
-            message: 'Email or password is invalid'
-        });
-    }
-
-    const isValidPassword = await user.comparePassword(password);
-
-    if (!isValidPassword) {
-        return res.status(401).json({
-            message: 'Email or password is invalid'
-        });
-    }
-
-    const token = createToken(user._id);
-
-    res.cookie('token', token, cookieOptions);
-
-    return res.status(200).json({
-        user: getPublicUser(user),
-        token
-    });
 }
 
 async function userLogoutController(req, res) {
