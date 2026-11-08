@@ -1,4 +1,3 @@
-﻿
 import { createContext } from 'react'
 import type {
   User,
@@ -10,6 +9,7 @@ export interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
   loading: boolean
+  initializing: boolean
   login: (credentials: LoginCredentials) => Promise<User>
   register: (credentials: RegisterCredentials) => Promise<User>
   logout: () => Promise<void>
