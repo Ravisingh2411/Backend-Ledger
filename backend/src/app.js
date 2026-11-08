@@ -12,6 +12,33 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
+// Temporary, focused diagnostics for authentication requests.
+// No credentials or personal data are written to the logs.
+app.use((req, res, next) => {
+    if (!['/api/auth/login', '/api/auth/register'].includes(req.path)) {
+        return next();
+    }
+
+    const startedAt = Date.now();
+    console.info(`[AUTH HTTP] ${req.method} ${req.path} received`);
+
+    res.on('finish', () => {
+        console.info(
+            `[AUTH HTTP] ${req.method} ${req.path} responded with ${res.statusCode} in ${Date.now() - startedAt}ms`
+        );
+    });
+
+    res.on('close', () => {
+        if (!res.writableFinished) {
+            console.warn(
+                `[AUTH HTTP] ${req.method} ${req.path} connection closed before response after ${Date.now() - startedAt}ms`
+            );
+        }
+    });
+
+    next();
+});
+
 const allowedOrigins = (process.env.FRONTEND_URL || '')
     .split(',')
     .map(origin => origin.trim())
