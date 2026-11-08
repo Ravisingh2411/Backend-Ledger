@@ -1,0 +1,22 @@
+/* Legacy page-level admin chrome is hidden while the shared AdminLayout owns navigation. */
+.admin-layout-content > div > aside,
+.admin-layout-content > div > main > header,
+.admin-layout-content > div > nav,
+.admin-layout-content > div > div.fixed {
+  display: none !important;
+}
+
+.admin-layout-content > div > main {
+  margin-left: 0 !important;
+  min-height: 0 !important;
+}
+
+.admin-layout-content > div {
+  min-height: calc(100vh - 82px);
+}
+
+@media (max-width: 1023px) {
+  .admin-layout-content > div {
+    padding-bottom: 5rem;
+  }
+}
