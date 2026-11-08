@@ -270,7 +270,7 @@ function Dashboard() {
         block: 'start',
       })
     })
-  }, [activeSection])
+  }, [activeSection, loading])
 
   const totalBalance = useMemo(
     () =>
@@ -615,17 +615,17 @@ function Dashboard() {
               <NavLink
                 to="/dashboard"
                 end
-                title="Dashboard"
+                title="Overview"
                 className={({ isActive }) =>
                   navItemClasses(isActive && !activeSection)
                 }
               >
                 <LayoutDashboard size={19} className="shrink-0" />
-                <span className="hidden lg:inline">Dashboard</span>
+                <span className="hidden lg:inline">Overview</span>
               </NavLink>
 
-              <a
-                href="#accounts"
+              <NavLink
+                to="/dashboard#accounts"
                 title="Accounts"
                 className={navItemClasses(
                   isDashboardActive && activeSection === '#accounts'
@@ -633,10 +633,10 @@ function Dashboard() {
               >
                 <Wallet size={19} className="shrink-0" />
                 <span className="hidden lg:inline">Accounts</span>
-              </a>
+              </NavLink>
 
-              <a
-                href="#transfer"
+              <NavLink
+                to="/dashboard#transfer"
                 title="Transfers"
                 className={navItemClasses(
                   isDashboardActive && activeSection === '#transfer'
@@ -644,7 +644,7 @@ function Dashboard() {
               >
                 <ArrowLeftRight size={19} className="shrink-0" />
                 <span className="hidden lg:inline">Transfers</span>
-              </a>
+              </NavLink>
 
               <NavLink
                 to="/transactions"
@@ -682,7 +682,7 @@ function Dashboard() {
                 onClick={() => void logout()}
                 title="Sign out"
                 aria-label="Sign out"
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F0DDDD] px-3 py-3 text-sm font-semibold text-[#A33D3D] transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 lg:justify-start"
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#CFE4D5] bg-[#F5FAF6] px-3 py-3 text-sm font-semibold text-[#176B52] transition hover:border-[#A9D0B5] hover:bg-[#EAF3EE] hover:text-[#12543F] lg:justify-start"
               >
                 <LogOut size={19} className="shrink-0" />
                 <span className="hidden lg:inline">Sign out</span>
@@ -700,16 +700,11 @@ function Dashboard() {
               </div>
             </div>
 
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
               <div className="hidden min-w-0 text-right sm:block">
-                <p className="truncate text-sm font-semibold">
-                  {user?.name}
-                </p>
-                <p className="truncate text-xs text-[#829087]">
-                  {user?.email}
-                </p>
+                <p className="truncate text-sm font-semibold">{user?.name}</p>
+                <p className="truncate text-xs text-[#829087]">{user?.email}</p>
               </div>
-
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52]">
                 {user?.name?.charAt(0).toUpperCase() || 'U'}
               </div>
