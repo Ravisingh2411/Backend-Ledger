@@ -52,6 +52,7 @@ interface Transaction {
   toAccount: string | AccountReference | null
   amount: number
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REVERSED'
+  transactionType?: 'TRANSFER' | 'WELCOME_BONUS'
   createdAt: string
 }
 
@@ -572,9 +573,15 @@ function Dashboard() {
   }
 
   const getTransactionDirection = (transaction: Transaction) => {
-    const fromAccountId = getAccountId(transaction.fromAccount)
+    if (transaction.transactionType === 'WELCOME_BONUS') return 'OPENING_BALANCE'
 
-    return fromAccountId !== null && ownedAccountIds.has(fromAccountId)
+    const fromAccountId = getAccountId(transaction.fromAccount)
+    const toAccountId = getAccountId(transaction.toAccount)
+    const fromIsOwned = fromAccountId !== null && ownedAccountIds.has(fromAccountId)
+    const toIsOwned = toAccountId !== null && ownedAccountIds.has(toAccountId)
+
+    if (fromIsOwned && toIsOwned) return 'INTERNAL_TRANSFER'
+    return fromIsOwned ? 'OUTGOING' : 'INCOMING'
   }
 
   const getStatusClasses = (status: Account['status']) => {
@@ -1470,15 +1477,13 @@ function Dashboard() {
                 ) : (
                   <div className="mt-5 divide-y divide-[#EDF0ED]">
                     {transactions.map((transaction) => {
-                      const outgoing = getTransactionDirection(transaction)
-
-                      const ownAccountId = outgoing
-                        ? getAccountId(transaction.fromAccount)
-                        : getAccountId(transaction.toAccount)
-
-                      const otherAccountId = outgoing
-                        ? getAccountId(transaction.toAccount)
-                        : getAccountId(transaction.fromAccount)
+                      const direction = getTransactionDirection(transaction)
+                      const outgoing = direction === 'OUTGOING'
+                      const internalTransfer = direction === 'INTERNAL_TRANSFER'
+                      const openingBalance = direction === 'OPENING_BALANCE'
+                      const fromAccountId = getAccountId(transaction.fromAccount)
+                      const toAccountId = getAccountId(transaction.toAccount)
+                      const ownAccountId = outgoing ? fromAccountId : toAccountId
 
                       return (
                         <div
@@ -1489,11 +1494,15 @@ function Dashboard() {
                             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
                               outgoing
                                 ? 'bg-red-50 text-red-600'
-                                : 'bg-emerald-50 text-emerald-700'
+                                : internalTransfer
+                                  ? 'bg-sky-50 text-sky-700'
+                                  : 'bg-emerald-50 text-emerald-700'
                             }`}
                           >
                             {outgoing ? (
                               <ArrowUpRight size={19} />
+                            ) : internalTransfer ? (
+                              <ArrowLeftRight size={19} />
                             ) : (
                               <ArrowDownLeft size={19} />
                             )}
@@ -1501,11 +1510,22 @@ function Dashboard() {
 
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold">
-                              {outgoing ? 'Money sent' : 'Money received'}
+                              {openingBalance
+                                ? 'Opening balance · Welcome credit'
+                                : internalTransfer
+                                  ? 'Transfer between your accounts'
+                                  : outgoing
+                                    ? 'Money sent'
+                                    : 'Money received'}
                             </p>
                             <p className="mt-1 truncate text-xs text-[#829087]">
-                              {outgoing ? 'To: ' : 'From: '}
-                              {getAccountReferenceLabel(otherAccountId)}
+                              {openingBalance
+                                ? 'Initial account credit'
+                                : internalTransfer
+                                  ? `From ${getAccountReferenceLabel(fromAccountId)} to ${getAccountReferenceLabel(toAccountId)}`
+                                  : outgoing
+                                    ? `To: ${getAccountReferenceLabel(toAccountId)}`
+                                    : `From: ${getAccountReferenceLabel(fromAccountId)}`}
                             </p>
                             <p className="mt-1 text-[11px] text-[#9AA69E]">
                               {formatDate(transaction.createdAt)}
