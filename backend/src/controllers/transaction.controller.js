@@ -326,40 +326,50 @@ async function createTransaction(req, res) {
             }
         }
 
-        // Notifications are sent only after the transaction commits.
-        try {
-            await emailService.sendTransactionEmail(
-                req.user.email,
-                req.user.name,
-                amount,
-                receiverId
-            );
-        } catch (emailError) {
-            console.error(
-                "Sender notification failed:",
-                emailError.message
-            );
-        }
+        // Send notifications after the response so email latency cannot
+        // delay a transfer that has already committed successfully.
+        const senderEmail = req.user.email;
+        const senderName = req.user.name;
 
-        try {
-            const receiverAccount = await accountModel
-                .findById(receiverId)
-                .populate("user");
+        setImmediate(() => {
+            void (async () => {
+                try {
+                    await emailService.sendTransactionEmail(
+                        senderEmail,
+                        senderName,
+                        amount,
+                        receiverId
+                    );
+                } catch (emailError) {
+                    console.error(
+                        "Sender notification failed:",
+                        emailError.message
+                    );
+                }
 
-            if (receiverAccount?.user) {
-                await emailService.sendMoneyReceivedEmail(
-                    receiverAccount.user.email,
-                    receiverAccount.user.name,
-                    amount,
-                    senderId
-                );
-            }
-        } catch (emailError) {
-            console.error(
-                "Receiver notification failed:",
-                emailError.message
-            );
-        }
+                try {
+                    const receiverAccount = await accountModel
+                        .findById(receiverId)
+                        .populate("user");
+
+                    if (receiverAccount?.user) {
+                        await emailService.sendMoneyReceivedEmail(
+                            receiverAccount.user.email,
+                            receiverAccount.user.name,
+                            amount,
+                            senderId
+                        );
+                    }
+                } catch (emailError) {
+                    console.error(
+                        "Receiver notification failed:",
+                        emailError.message
+                    );
+                }
+            })().catch(error => {
+                console.error("Background transaction notifications failed:", error);
+            });
+        });
 
         return res.status(201).json({
             message: "Transaction completed successfully",
