@@ -703,9 +703,12 @@ function Dashboard() {
         <main className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#E5EAE5] bg-white/95 px-5 py-4 backdrop-blur sm:px-8 lg:px-10">
             <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#176B52] text-white">
+                <Wallet size={21} />
+              </div>
               <div>
-                <p className="text-sm font-bold">Backend Ledger</p>
-                <p className="text-xs text-[#829087]">Your financial overview</p>
+                <p className="text-sm font-bold text-[#26382E]">Backend Ledger</p>
+                <p className="text-xs text-[#829087]">Financial workspace</p>
               </div>
             </div>
 
