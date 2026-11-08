@@ -81,8 +81,8 @@ function Home() {
               </Link>
             ) : (
               <>
-                <Link reloadDocument to="/login" className="relative z-50 pointer-events-auto rounded-xl px-3 py-2.5 text-sm font-semibold text-[#34483D] transition hover:bg-[#F0F5F0] sm:px-4">Sign in</Link>
-                <Link reloadDocument to="/register" className="relative z-50 pointer-events-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#176B52] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#12543F] sm:px-5">
+                <Link to="/login" className="relative z-50 pointer-events-auto rounded-xl px-3 py-2.5 text-sm font-semibold text-[#34483D] transition hover:bg-[#F0F5F0] sm:px-4">Sign in</Link>
+                <Link to="/register" className="relative z-50 pointer-events-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#176B52] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#12543F] sm:px-5">
                   Create account <ArrowRight size={16} />
                 </Link>
               </>
