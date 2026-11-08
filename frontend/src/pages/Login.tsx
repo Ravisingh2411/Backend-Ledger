@@ -28,11 +28,9 @@ function Login() {
     try {
       const user = await login({ email, password })
 
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true })
-      } else {
-        navigate('/dashboard', { replace: true })
-      }
+      window.location.replace(
+        user.role === 'admin' ? '/admin/dashboard' : '/dashboard'
+      )
     } catch (err: unknown) {
       const message = (
         err as { response?: { data?: { message?: string } } }
