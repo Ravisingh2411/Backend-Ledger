@@ -12,7 +12,7 @@ const TOKEN_MAX_AGE = 3 * 24 * 60 * 60 * 1000;
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
     maxAge: TOKEN_MAX_AGE
 };
@@ -20,7 +20,7 @@ const cookieOptions = {
 const clearCookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/'
 };
 
@@ -63,7 +63,7 @@ function getToken(req) {
         return null;
     }
 
-    const parts = authHeader.trim().split(/\s+/);
+    const parts = authHeader.trim().split(/\\s+/);
 
     if (
         parts.length !== 2 ||
