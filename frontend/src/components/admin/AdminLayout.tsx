@@ -49,7 +49,7 @@ const AdminLayout = () => {
 
   const displayName = user?.name?.trim() || 'Admin'
   const initials = displayName
-    .split(/\\s+/)
+    .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
     .map(part => part.charAt(0).toUpperCase())
