@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './components/common/ProtectedRoute'
 import AdminRoute from './components/common/AdminRoute'
 
+const Home = lazy(() => import('./pages/Home'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -34,6 +35,7 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public Routes */}
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
@@ -83,17 +85,8 @@ function App() {
             />
           </Route>
 
-          {/* Default Route */}
-          <Route
-            path="/"
-            element={<Navigate to="/dashboard" replace />}
-          />
-
           {/* Not Found */}
-          <Route
-            path="*"
-            element={<Navigate to="/dashboard" replace />}
-          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
