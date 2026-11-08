@@ -295,8 +295,9 @@ function Register() {
           <p className="mt-7 text-center text-sm text-muted">
             Already have an account?{' '}
             <Link
+              reloadDocument
               to="/login"
-              className="font-semibold text-brand hover:underline"
+              className="relative z-10 pointer-events-auto font-semibold text-brand hover:underline"
             >
               Sign in
             </Link>
