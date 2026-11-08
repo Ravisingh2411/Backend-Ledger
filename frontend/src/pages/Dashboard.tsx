@@ -48,8 +48,8 @@ interface AccountReference {
 
 interface Transaction {
   _id: string
-  fromAccount: string | AccountReference
-  toAccount: string | AccountReference
+  fromAccount: string | AccountReference | null
+  toAccount: string | AccountReference | null
   amount: number
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REVERSED'
   createdAt: string
@@ -70,7 +70,11 @@ interface TransactionsResponse {
 type AccountAction = 'freeze' | 'unfreeze' | 'close'
 type AccountFilter = 'ALL' | 'ACTIVE' | 'FROZEN' | 'CLOSED'
 
-function getAccountId(account: string | AccountReference): string {
+function getAccountId(
+  account: string | AccountReference | null | undefined
+): string | null {
+  if (!account) return null
+
   return typeof account === 'string' ? account : account._id
 }
 
@@ -110,6 +114,10 @@ function formatAccountDate(date?: string) {
 
 function shortId(id: string) {
   return `${id.slice(0, 8)}...${id.slice(-4)}`
+}
+
+function getAccountReferenceLabel(id: string | null) {
+  return id ? shortId(id) : 'Deleted account'
 }
 
 function getErrorMessage(err: unknown, fallback: string) {
@@ -552,7 +560,9 @@ function Dashboard() {
   }
 
   const getTransactionDirection = (transaction: Transaction) => {
-    return ownedAccountIds.has(getAccountId(transaction.fromAccount))
+    const fromAccountId = getAccountId(transaction.fromAccount)
+
+    return fromAccountId !== null && ownedAccountIds.has(fromAccountId)
   }
 
   const getStatusClasses = (status: Account['status']) => {
@@ -1451,6 +1461,7 @@ function Dashboard() {
                   <div className="mt-5 divide-y divide-[#EDF0ED]">
                     {transactions.map((transaction) => {
                       const outgoing = getTransactionDirection(transaction)
+
                       const ownAccountId = outgoing
                         ? getAccountId(transaction.fromAccount)
                         : getAccountId(transaction.toAccount)
@@ -1484,7 +1495,7 @@ function Dashboard() {
                             </p>
                             <p className="mt-1 truncate text-xs text-[#829087]">
                               {outgoing ? 'To: ' : 'From: '}
-                              {shortId(otherAccountId)}
+                              {getAccountReferenceLabel(otherAccountId)}
                             </p>
                             <p className="mt-1 text-[11px] text-[#9AA69E]">
                               {formatDate(transaction.createdAt)}
@@ -1514,7 +1525,7 @@ function Dashboard() {
                               {transaction.status}
                             </p>
                             <p className="mt-1 text-[10px] text-[#A0AAA3]">
-                              {shortId(ownAccountId)}
+                              {getAccountReferenceLabel(ownAccountId)}
                             </p>
                           </div>
                         </div>

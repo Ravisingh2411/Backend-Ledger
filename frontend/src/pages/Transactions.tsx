@@ -12,10 +12,9 @@ import {
   Eye,
   LayoutDashboard,
   LogOut,
-  Printer,
-  Search,
   RefreshCw,
   ReceiptText,
+  Search,
   ShieldCheck,
   Wallet,
   X,
@@ -76,20 +75,6 @@ function formatDate(date: string) {
   })
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, character => {
-    const entities: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
-
-    return entities[character]
-  })
-}
-
 function escapeCsv(value: string | number) {
   const text = String(value)
   return `"${text.replace(/"/g, '""')}"`
@@ -108,6 +93,156 @@ function statusStyle(status: Transaction['status']) {
     default:
       return 'bg-slate-100 text-slate-600'
   }
+}
+
+function createReceiptPdf(transaction: Transaction, direction: string) {
+  const encoder = new TextEncoder()
+
+  const sanitize = (value: string) =>
+    value
+      .replace(/₹/g, 'INR ')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)')
+
+  const amount = sanitize(formatAmount(transaction.amount))
+  const transactionId = sanitize(transaction._id)
+  const fromAccount = sanitize(getAccountId(transaction.fromAccount))
+  const toAccount = sanitize(getAccountId(transaction.toAccount))
+  const status = sanitize(transaction.status)
+  const transactionDirection = sanitize(direction)
+  const date = sanitize(formatDate(transaction.createdAt))
+  const generatedDate = sanitize(formatDate(new Date().toISOString()))
+
+  const statusColor =
+    transaction.status === 'COMPLETED'
+      ? '0.02 0.47 0.35'
+      : transaction.status === 'PENDING'
+        ? '0.71 0.33 0.02'
+        : transaction.status === 'FAILED'
+          ? '0.75 0.07 0.23'
+          : '0.28 0.34 0.39'
+
+  const commands: string[] = []
+
+  const addText = (
+    text: string,
+    x: number,
+    y: number,
+    size = 11,
+    bold = false,
+    color = '0.09 0.17 0.14',
+  ) => {
+    commands.push(
+      `BT /${bold ? 'F2' : 'F1'} ${size} Tf ${color} rg 1 0 0 1 ${x} ${y} Tm (${sanitize(text)}) Tj ET`,
+    )
+  }
+
+  const addLine = (x1: number, y1: number, x2: number, y2: number) => {
+    commands.push(
+      `0.88 0.91 0.89 RG 0.7 w ${x1} ${y1} m ${x2} ${y2} l S`,
+    )
+  }
+
+  const addRect = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: string,
+  ) => {
+    commands.push(`${color} rg ${x} ${y} ${width} ${height} re f`)
+  }
+
+  addRect(0, 0, 595, 842, '0.95 0.97 0.95')
+  addRect(55, 65, 485, 712, '1 1 1')
+
+  addText('Backend Ledger', 85, 724, 25, true, '0.09 0.42 0.29')
+  addText('Secure Personal Finance Management', 85, 704, 10, false, '0.43 0.50 0.46')
+
+  addLine(85, 680, 510, 680)
+
+  addText('Transaction Receipt', 85, 649, 19, true)
+
+  addRect(85, 495, 425, 125, '0.95 0.97 0.95')
+
+  addText('TRANSACTION AMOUNT', 222, 590, 10, true, '0.43 0.50 0.46')
+  addText(amount, 205, 550, 27, true, '0.09 0.42 0.29')
+
+  addRect(245, 510, 105, 23, '0.91 0.98 0.94')
+  addText(status, 267, 518, 9, true, statusColor)
+
+  addText('Transaction ID', 85, 457, 10, false, '0.43 0.50 0.46')
+  addText(transactionId, 85, 437, 11, true)
+  addLine(85, 420, 510, 420)
+
+  addText('Direction', 85, 392, 10, false, '0.43 0.50 0.46')
+  addText(transactionDirection, 85, 372, 11, true)
+
+  addText('From Account', 85, 337, 10, false, '0.43 0.50 0.46')
+  addText(fromAccount, 85, 317, 10, true)
+
+  addText('To Account', 85, 282, 10, false, '0.43 0.50 0.46')
+  addText(toAccount, 85, 262, 10, true)
+
+  addText('Transaction Date & Time', 85, 227, 10, false, '0.43 0.50 0.46')
+  addText(date, 85, 207, 11, true)
+
+  addLine(85, 185, 510, 185)
+
+  addText(
+    'This receipt was generated electronically by Backend Ledger.',
+    115,
+    145,
+    9,
+    false,
+    '0.43 0.50 0.46',
+  )
+
+  addText(
+    `Generated on ${generatedDate}`,
+    205,
+    128,
+    9,
+    false,
+    '0.43 0.50 0.46',
+  )
+
+  const stream = commands.join('\n')
+
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+    `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream`,
+  ]
+
+  let pdf = '%PDF-1.4\n'
+  const offsets = [0]
+
+  objects.forEach((object, index) => {
+    offsets.push(encoder.encode(pdf).length)
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
+  })
+
+  const xrefOffset = encoder.encode(pdf).length
+
+  pdf += `xref\n0 ${objects.length + 1}\n`
+  pdf += '0000000000 65535 f \n'
+
+  offsets.slice(1).forEach(offset => {
+    pdf += `${String(offset).padStart(10, '0')} 00000 n \n`
+  })
+
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n`
+  pdf += `startxref\n${xrefOffset}\n%%EOF`
+
+  return new Blob([encoder.encode(pdf)], {
+    type: 'application/pdf',
+  })
 }
 
 export default function Transactions() {
@@ -342,193 +477,25 @@ export default function Transactions() {
   }
 
   const downloadReceipt = (transaction: Transaction) => {
-    const receiptWindow = window.open('', '_blank', 'width=800,height=900')
+    try {
+      const direction = getDirection(transaction)
+      const blob = createReceiptPdf(transaction, direction)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
 
-    if (!receiptWindow) {
-      window.alert('Please allow pop-ups to print or save the receipt.')
-      return
+      link.href = url
+      link.download = `backend-ledger-receipt-${transaction._id}.pdf`
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url)
+      }, 1000)
+    } catch {
+      window.alert('Unable to download the receipt. Please try again.')
     }
-
-    const transactionId = escapeHtml(transaction._id)
-    const fromAccount = escapeHtml(getAccountId(transaction.fromAccount))
-    const toAccount = escapeHtml(getAccountId(transaction.toAccount))
-    const amount = escapeHtml(formatAmount(transaction.amount))
-    const status = escapeHtml(transaction.status)
-    const direction = escapeHtml(getDirection(transaction))
-    const date = escapeHtml(formatDate(transaction.createdAt))
-    const generatedDate = escapeHtml(formatDate(new Date().toISOString()))
-
-    const statusColor =
-      transaction.status === 'COMPLETED'
-        ? '#047857'
-        : transaction.status === 'PENDING'
-          ? '#b45309'
-          : transaction.status === 'FAILED'
-            ? '#be123c'
-            : '#475569'
-
-    const receiptHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-        <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Transaction Receipt - ${transactionId}</title>
-          <style>
-            * { box-sizing: border-box; }
-            body {
-              margin: 0;
-              padding: 40px 20px;
-              background: #f1f5f2;
-              color: #172b24;
-              font-family: Arial, Helvetica, sans-serif;
-            }
-            .receipt {
-              max-width: 650px;
-              margin: 0 auto;
-              padding: 42px;
-              background: #ffffff;
-              border: 1px solid #e2e8e3;
-              border-radius: 18px;
-            }
-            .brand {
-              color: #176b4a;
-              font-size: 25px;
-              font-weight: 800;
-              letter-spacing: -0.7px;
-            }
-            .subtitle {
-              margin-top: 7px;
-              color: #718078;
-              font-size: 13px;
-            }
-            .divider {
-              height: 1px;
-              margin: 28px 0;
-              background: #e5ebe6;
-            }
-            .heading { margin: 0; font-size: 21px; }
-            .amount-box {
-              margin-top: 22px;
-              padding: 25px;
-              border-radius: 13px;
-              background: #f1f7f2;
-              text-align: center;
-            }
-            .amount-label {
-              color: #718078;
-              font-size: 12px;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
-            .amount {
-              margin-top: 10px;
-              color: #176b4a;
-              font-size: 32px;
-              font-weight: 800;
-            }
-            .status {
-              display: inline-block;
-              margin-top: 14px;
-              padding: 7px 13px;
-              border-radius: 30px;
-              background: #f0fdf4;
-              color: ${statusColor};
-              font-size: 12px;
-              font-weight: 700;
-            }
-            .details { margin-top: 25px; }
-            .detail-row {
-              display: flex;
-              justify-content: space-between;
-              gap: 20px;
-              padding: 15px 0;
-              border-bottom: 1px solid #edf1ed;
-            }
-            .label { color: #718078; font-size: 13px; }
-            .value {
-              max-width: 65%;
-              overflow-wrap: anywhere;
-              color: #172b24;
-              font-size: 13px;
-              font-weight: 600;
-              text-align: right;
-            }
-            .footer {
-              margin-top: 30px;
-              color: #849188;
-              font-size: 11px;
-              line-height: 1.7;
-              text-align: center;
-            }
-            @media print {
-              body { padding: 0; background: #ffffff; }
-              .receipt {
-                max-width: none;
-                border: none;
-                border-radius: 0;
-              }
-              @page { size: A4; margin: 18mm; }
-            }
-            @media (max-width: 480px) {
-              .receipt { padding: 25px 18px; }
-              .detail-row { flex-direction: column; gap: 7px; }
-              .value { max-width: 100%; text-align: left; }
-            }
-          </style>
-        </head>
-        <body>
-          <main class="receipt">
-            <div class="brand">Backend Ledger</div>
-            <div class="subtitle">Secure Personal Finance Management</div>
-            <div class="divider"></div>
-            <h1 class="heading">Transaction Receipt</h1>
-            <section class="amount-box">
-              <div class="amount-label">Transaction Amount</div>
-              <div class="amount">${amount}</div>
-              <div class="status">${status}</div>
-            </section>
-            <section class="details">
-              <div class="detail-row">
-                <span class="label">Transaction ID</span>
-                <span class="value">${transactionId}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Direction</span>
-                <span class="value">${direction}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">From Account</span>
-                <span class="value">${fromAccount}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">To Account</span>
-                <span class="value">${toAccount}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Transaction Date</span>
-                <span class="value">${date}</span>
-              </div>
-            </section>
-            <div class="divider"></div>
-            <footer class="footer">
-              This receipt was generated electronically by Backend Ledger.<br />
-              Generated on ${generatedDate}.<br />
-              Please retain this receipt for your personal records.
-            </footer>
-          </main>
-        </body>
-      </html>
-    `
-
-    receiptWindow.onload = () => {
-      receiptWindow.focus()
-      receiptWindow.print()
-    }
-
-    receiptWindow.document.open()
-    receiptWindow.document.write(receiptHtml)
-    receiptWindow.document.close()
   }
 
   const clearFilters = () => {
@@ -554,9 +521,7 @@ export default function Transactions() {
             <span className="text-lg font-bold tracking-tight text-[#172b24]">
               Backend Ledger
             </span>
-            <p className="text-xs text-[#849188]">
-              Financial workspace
-            </p>
+            <p className="text-xs text-[#849188]">Financial workspace</p>
           </div>
         </Link>
 
@@ -656,19 +621,13 @@ export default function Transactions() {
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#e5ebe6] bg-white/95 px-5 py-4 backdrop-blur sm:px-8 lg:px-10">
           <div>
             <p className="text-sm font-bold">Backend Ledger</p>
-            <p className="text-xs text-[#829087]">
-              Your financial workspace
-            </p>
+            <p className="text-xs text-[#829087]">Your financial workspace</p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="hidden min-w-0 text-right sm:block">
-              <p className="truncate text-sm font-semibold">
-                {user?.name}
-              </p>
-              <p className="truncate text-xs text-[#829087]">
-                {user?.email}
-              </p>
+              <p className="truncate text-sm font-semibold">{user?.name}</p>
+              <p className="truncate text-xs text-[#829087]">{user?.email}</p>
             </div>
 
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e4efe8] text-sm font-bold text-[#176b4a]">
@@ -682,9 +641,7 @@ export default function Transactions() {
             <header className="mb-8">
               <div className="flex flex-wrap items-center justify-between gap-5">
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    Transactions
-                  </h1>
+                  <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
                   <p className="mt-2 text-sm text-[#718078]">
                     View and manage your complete transaction history.
                   </p>
@@ -695,10 +652,7 @@ export default function Transactions() {
                   disabled={refreshing}
                   className="inline-flex items-center gap-2 rounded-xl border border-[#dce5de] bg-white px-4 py-2.5 text-sm font-semibold transition hover:bg-[#f0f5f1] disabled:opacity-60"
                 >
-                  <RefreshCw
-                    size={16}
-                    className={refreshing ? 'animate-spin' : ''}
-                  />
+                  <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
                   Refresh
                 </button>
               </div>
@@ -713,25 +667,19 @@ export default function Transactions() {
 
               <div className="rounded-2xl border border-[#e5ebe6] bg-white p-5">
                 <p className="text-sm text-[#718078]">Completed</p>
-                <p className="mt-3 text-3xl font-bold text-emerald-700">
-                  {completedCount}
-                </p>
+                <p className="mt-3 text-3xl font-bold text-emerald-700">{completedCount}</p>
                 <p className="mt-1 text-xs text-[#87948c]">Successful transactions</p>
               </div>
 
               <div className="rounded-2xl border border-[#e5ebe6] bg-white p-5">
                 <p className="text-sm text-[#718078]">Pending</p>
-                <p className="mt-3 text-3xl font-bold text-amber-600">
-                  {pendingCount}
-                </p>
+                <p className="mt-3 text-3xl font-bold text-amber-600">{pendingCount}</p>
                 <p className="mt-1 text-xs text-[#87948c]">Awaiting completion</p>
               </div>
 
               <div className="rounded-2xl border border-[#e5ebe6] bg-white p-5">
                 <p className="text-sm text-[#718078]">Failed</p>
-                <p className="mt-3 text-3xl font-bold text-rose-600">
-                  {failedCount}
-                </p>
+                <p className="mt-3 text-3xl font-bold text-rose-600">{failedCount}</p>
                 <p className="mt-1 text-xs text-[#87948c]">Unsuccessful transactions</p>
               </div>
             </section>
@@ -787,10 +735,7 @@ export default function Transactions() {
                   </select>
 
                   <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="from-date"
-                      className="text-xs font-semibold text-[#64756b]"
-                    >
+                    <label htmlFor="from-date" className="text-xs font-semibold text-[#64756b]">
                       From Date
                     </label>
                     <div className="relative">
@@ -814,10 +759,7 @@ export default function Transactions() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="to-date"
-                      className="text-xs font-semibold text-[#64756b]"
-                    >
+                    <label htmlFor="to-date" className="text-xs font-semibold text-[#64756b]">
                       To Date
                     </label>
                     <input
@@ -910,9 +852,7 @@ export default function Transactions() {
                               className="transition hover:bg-[#fbfdfb]"
                             >
                               <td className="px-6 py-5">
-                                <p className="text-sm font-semibold">
-                                  #{shortId(transaction._id)}
-                                </p>
+                                <p className="text-sm font-semibold">#{shortId(transaction._id)}</p>
                                 <p className="mt-1 text-xs text-[#9aa59e]">
                                   ID: {transaction._id}
                                 </p>
@@ -925,23 +865,15 @@ export default function Transactions() {
                                       ? 'bg-amber-50 text-amber-700'
                                       : 'bg-emerald-50 text-emerald-700'
                                   }`}>
-                                    {sent ? (
-                                      <ArrowUpRight size={17} />
-                                    ) : (
-                                      <ArrowDownLeft size={17} />
-                                    )}
+                                    {sent ? <ArrowUpRight size={17} /> : <ArrowDownLeft size={17} />}
                                   </span>
-                                  <span className="text-sm font-medium">
-                                    {direction}
-                                  </span>
+                                  <span className="text-sm font-medium">{direction}</span>
                                 </div>
                               </td>
 
                               <td className="px-6 py-5 text-xs text-[#64756b]">
                                 <p>From: {shortId(getAccountId(transaction.fromAccount))}</p>
-                                <p className="mt-1">
-                                  To: {shortId(getAccountId(transaction.toAccount))}
-                                </p>
+                                <p className="mt-1">To: {shortId(getAccountId(transaction.toAccount))}</p>
                               </td>
 
                               <td className="px-6 py-5 text-sm text-[#64756b]">
@@ -991,9 +923,7 @@ export default function Transactions() {
                         <ChevronLeft size={18} />
                       </button>
 
-                      <span className="px-2 text-sm font-semibold">
-                        {currentPage}
-                      </span>
+                      <span className="px-2 text-sm font-semibold">{currentPage}</span>
 
                       <button
                         onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
@@ -1027,10 +957,7 @@ export default function Transactions() {
                 <div>
                   <div className="flex items-center gap-2">
                     <ReceiptText size={20} className="text-[#176b4a]" />
-                    <h2
-                      id="transaction-details-title"
-                      className="text-lg font-bold"
-                    >
+                    <h2 id="transaction-details-title" className="text-lg font-bold">
                       Transaction Details
                     </h2>
                   </div>
@@ -1120,8 +1047,8 @@ export default function Transactions() {
                   onClick={() => downloadReceipt(selectedTransaction)}
                   className="inline-flex items-center gap-2 rounded-xl bg-[#176b4a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#12583c]"
                 >
-                  <Printer size={16} />
-                  Print / Save PDF
+                  <Download size={16} />
+                  Download PDF
                 </button>
 
                 <button

@@ -20,6 +20,12 @@ const transactionSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    transactionType: {
+        type: String,
+        enum: ['TRANSFER', 'WELCOME_BONUS'],
+        default: 'TRANSFER',
+        required: true
+    },
     status: {
         type: String,
         enum: {

@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -36,6 +37,16 @@ const userSchema = new mongoose.Schema({
         default: false,
         immutable: true,
         select: false
+    },
+
+    // One-time welcome credit tracking.
+    welcomeCreditGranted: {
+        type: Boolean,
+        default: false
+    },
+    welcomeCreditGrantedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

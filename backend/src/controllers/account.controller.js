@@ -1,6 +1,12 @@
 
 const mongoose = require('mongoose');
+
 const accountModel = require('../models/account.model');
+const userModel = require('../models/user.model');
+const transactionModel = require('../models/transaction.model');
+const ledgerModel = require('../models/ledger.model');
+
+const WELCOME_CREDIT_AMOUNT = 10000;
 
 function createError(message, statusCode = 400) {
     const error = new Error(message);
@@ -20,16 +26,116 @@ async function createAccountController(req, res) {
         });
     }
 
-    const account = await accountModel.create({
-        user: req.user._id,
-        name,
-        currency: 'INR'
-    });
+    let session;
 
-    res.status(201).json({
-        message: 'Account created successfully',
-        account
-    });
+    try {
+        session = await mongoose.startSession();
+
+        let account;
+        let welcomeCreditGranted = false;
+
+        await session.withTransaction(async () => {
+            // Create the customer's account.
+            account = new accountModel({
+                user: req.user._id,
+                name,
+                currency: 'INR'
+            });
+
+            await account.save({ session });
+
+            // Only normal customers can receive the welcome credit.
+            // This conditional update allows the credit only once
+            // for each customer, even if they create multiple accounts.
+            if (req.user.role === 'user') {
+                const bonusClaim = await userModel.findOneAndUpdate(
+                    {
+                        _id: req.user._id,
+                        role: 'user',
+                        systemUser: { $ne: true },
+                        welcomeCreditGranted: { $ne: true }
+                    },
+                    {
+                        $set: {
+                            welcomeCreditGranted: true,
+                            welcomeCreditGrantedAt: new Date()
+                        }
+                    },
+                    {
+                        new: true,
+                        session,
+                        runValidators: true
+                    }
+                );
+
+                if (bonusClaim) {
+                    // Create a dedicated welcome bonus transaction.
+                    // Both account references point to the customer's
+                    // first account because this is not a normal transfer.
+                    const welcomeTransaction = new transactionModel({
+                        fromAccount: account._id,
+                        toAccount: account._id,
+                        initiatedBy: req.user._id,
+                        transactionType: 'WELCOME_BONUS',
+                        amount: WELCOME_CREDIT_AMOUNT,
+                        idempotencyKey:
+                            `WELCOME_BONUS:${req.user._id}`,
+                        status: 'COMPLETED'
+                    });
+
+                    await welcomeTransaction.save({ session });
+
+                    // Credit the account through the immutable ledger.
+                    await ledgerModel.create(
+                        [{
+                            account: account._id,
+                            amount: WELCOME_CREDIT_AMOUNT,
+                            transaction: welcomeTransaction._id,
+                            type: 'CREDIT'
+                        }],
+                        { session }
+                    );
+
+                    welcomeCreditGranted = true;
+                }
+            }
+        }, {
+            readPreference: 'primary',
+            readConcern: {
+                level: 'snapshot'
+            },
+            writeConcern: {
+                w: 'majority'
+            }
+        });
+
+        return res.status(201).json({
+            message: welcomeCreditGranted
+                ? 'Account created successfully. ₹10,000 welcome credit added.'
+                : 'Account created successfully.',
+            account,
+            welcomeCredit: {
+                credited: welcomeCreditGranted,
+                amount: welcomeCreditGranted
+                    ? WELCOME_CREDIT_AMOUNT
+                    : 0
+            }
+        });
+
+    } catch (error) {
+        console.error('Account creation error:', error);
+
+        return res.status(error.statusCode || 500).json({
+            message: error.statusCode
+                ? error.message
+                : 'Unable to create account. Please try again later.'
+        });
+
+    } finally {
+        if (session) {
+            await session.endSession();
+        }
+    }
 }
 
 async function getUserAccountsController(req, res) {
