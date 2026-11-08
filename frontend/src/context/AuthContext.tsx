@@ -1,4 +1,3 @@
-﻿
 import { useEffect, useState, type ReactNode } from 'react'
 import AuthContext from './auth-context'
 import api from '../services/api'
@@ -11,7 +10,8 @@ import type {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [initializing, setInitializing] = useState(true)
 
   useEffect(() => {
     let isMounted = true
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } finally {
         if (isMounted) {
-          setLoading(false)
+          setInitializing(false)
         }
       }
     }
@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated: Boolean(user),
         loading,
+        initializing,
         login,
         register,
         logout,
