@@ -118,17 +118,19 @@ const AdminLayout = () => {
               {pageTitles[location.pathname] || 'Admin Console'}
             </h2>
           </div>
-          <div className="flex min-w-0 items-center gap-3 border-l border-[#E5ECE6] pl-3 sm:gap-4 sm:pl-5">
-            <div className="hidden min-w-0 text-right sm:block">
+        </header>
+
+        <div className="flex justify-end px-5 pt-4 sm:px-8 lg:px-10">
+          <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#E1EAE3] bg-white px-4 py-2.5 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52]">
+              {initials}
+            </div>
+            <div className="min-w-0">
               <p className="max-w-[190px] truncate text-sm font-semibold text-[#26382E]">{displayName}</p>
               <p className="max-w-[190px] truncate text-[11px] text-[#829087]">{user?.email || 'Administrator'}</p>
             </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52] ring-2 ring-[#F2F7F3]">
-              {initials}
-            </div>
           </div>
-
-        </header>
+        </div>
 
         <div className="admin-layout-content min-w-0">
           <Outlet />
