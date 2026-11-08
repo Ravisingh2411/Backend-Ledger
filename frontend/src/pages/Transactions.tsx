@@ -33,6 +33,7 @@ interface Transaction {
   toAccount: AccountReference
   amount: number
   status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REVERSED'
+  transactionType?: 'TRANSFER' | 'WELCOME_BONUS'
   createdAt: string
 }
 
@@ -422,11 +423,14 @@ export default function Transactions() {
   ).length
 
   const getDirection = (transaction: Transaction) => {
+    if (transaction.transactionType === 'WELCOME_BONUS') return 'Opening Balance'
     const from = getAccountId(transaction.fromAccount)
     const to = getAccountId(transaction.toAccount)
-
-    if (accountIds.includes(from)) return 'Sent'
-    if (accountIds.includes(to)) return 'Received'
+    const fromIsOwned = accountIds.includes(from)
+    const toIsOwned = accountIds.includes(to)
+    if (fromIsOwned && toIsOwned) return 'Internal Transfer'
+    if (fromIsOwned) return 'Sent'
+    if (toIsOwned) return 'Received'
     return 'Transfer'
   }
 
@@ -849,6 +853,8 @@ export default function Transactions() {
                         {paginatedTransactions.map(transaction => {
                           const direction = getDirection(transaction)
                           const sent = direction === 'Sent'
+                          const internalTransfer = direction === 'Internal Transfer'
+                          const openingBalance = direction === 'Opening Balance'
 
                           return (
                             <tr
@@ -867,11 +873,13 @@ export default function Transactions() {
                                   <span className={`rounded-lg p-2 ${
                                     sent
                                       ? 'bg-amber-50 text-amber-700'
-                                      : 'bg-emerald-50 text-emerald-700'
+                                      : internalTransfer
+                                        ? 'bg-sky-50 text-sky-700'
+                                        : 'bg-emerald-50 text-emerald-700'
                                   }`}>
-                                    {sent ? <ArrowUpRight size={17} /> : <ArrowDownLeft size={17} />}
+                                    {sent ? <ArrowUpRight size={17} /> : internalTransfer ? <ArrowLeftRight size={17} /> : <ArrowDownLeft size={17} />}
                                   </span>
-                                  <span className="text-sm font-medium">{direction}</span>
+                                  <span className="text-sm font-medium">{openingBalance ? 'Opening Balance · Initial Deposit' : direction}</span>
                                 </div>
                               </td>
 
@@ -1030,7 +1038,9 @@ export default function Transactions() {
                         Transaction Direction
                       </p>
                       <p className="mt-1 text-sm font-semibold">
-                        {getDirection(selectedTransaction)}
+                        {getDirection(selectedTransaction) === 'Opening Balance'
+                          ? 'Opening Balance · Initial Deposit'
+                          : getDirection(selectedTransaction)}
                       </p>
                     </div>
 
