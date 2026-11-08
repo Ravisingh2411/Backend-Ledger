@@ -1,5 +1,5 @@
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -15,8 +15,15 @@ import {
 import { useAuth } from '../context/useAuth'
 
 function Register() {
-  const { register, loading } = useAuth()
+  const { register, loading, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [redirectPath, setRedirectPath] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (redirectPath && isAuthenticated) {
+      navigate(redirectPath, { replace: true })
+    }
+  }, [redirectPath, isAuthenticated, navigate])
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -41,7 +48,7 @@ function Register() {
 
     try {
       await register({ name, email, password })
-      navigate('/dashboard', { replace: true })
+      setRedirectPath('/dashboard')
     } catch (err: unknown) {
       const message = (
         err as { response?: { data?: { message?: string } } }
