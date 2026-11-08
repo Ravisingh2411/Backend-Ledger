@@ -546,7 +546,10 @@ function Dashboard() {
       setAmount('')
       setReceiverAccount('')
       setTransferSuccess('Transfer completed successfully.')
-      await loadDashboard(true)
+
+      // Do not keep the transfer button loading while dashboard data refreshes.
+      // The committed transfer is successful; refresh balances and history in background.
+      void loadDashboard(true)
     } catch (err: unknown) {
       setTransferError(
         getErrorMessage(
