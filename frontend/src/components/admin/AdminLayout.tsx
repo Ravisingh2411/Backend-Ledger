@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Activity,
   ClipboardList,
   LayoutDashboard,
   Loader2,
   LogOut,
   ReceiptText,
-  ShieldCheck,
   Users,
   Wallet,
 } from 'lucide-react'
