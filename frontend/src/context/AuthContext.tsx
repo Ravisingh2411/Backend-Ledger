@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import AuthContext from './auth-context'
 import api from '../services/api'
 import type {
@@ -12,6 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [initializing, setInitializing] = useState(true)
+  const authRequestStarted = useRef(false)
 
   useEffect(() => {
     let isMounted = true
@@ -23,11 +24,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await api.get<{ user: User }>('/auth/me')
 
-        if (isMounted) {
+        if (isMounted && !authRequestStarted.current) {
           setUser(response.data.user)
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && !authRequestStarted.current) {
           setUser(null)
         }
       } finally {
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (
     credentials: LoginCredentials
   ): Promise<User> => {
+    authRequestStarted.current = true
     setLoading(true)
 
     try {
@@ -69,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (
     credentials: RegisterCredentials
   ): Promise<User> => {
+    authRequestStarted.current = true
     setLoading(true)
 
     try {
