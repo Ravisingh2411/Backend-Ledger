@@ -2,9 +2,9 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../../context/useAuth'
 
 function AdminRoute() {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, initializing } = useAuth()
 
-  if (loading) {
+  if (initializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
         Checking admin access...
