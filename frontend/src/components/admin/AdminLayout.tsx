@@ -128,15 +128,6 @@ const AdminLayout = () => {
             </h2>
           </div>
 
-          <div className="flex min-w-0 items-center gap-3 border-l border-[#E5ECE6] pl-3 sm:gap-4 sm:pl-5">
-            <div className="hidden min-w-0 text-right sm:block">
-              <p className="max-w-[190px] truncate text-sm font-semibold text-[#26382E]">{displayName}</p>
-              <p className="max-w-[190px] truncate text-[11px] text-[#829087]">{user?.email || 'Administrator'}</p>
-            </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E4EFE8] text-sm font-bold text-[#176B52] ring-2 ring-[#F2F7F3]">
-              {initials}
-            </div>
-          </div>
         </header>
 
         <div className="admin-layout-content min-w-0">
