@@ -1537,10 +1537,12 @@ function Dashboard() {
                               className={`text-sm font-bold ${
                                 outgoing
                                   ? 'text-red-600'
-                                  : 'text-emerald-700'
+                                  : internalTransfer
+                                    ? 'text-sky-700'
+                                    : 'text-emerald-700'
                               }`}
                             >
-                              {outgoing ? '-' : '+'}
+                              {outgoing ? '-' : internalTransfer ? '' : '+'}
                               {formatCurrency(transaction.amount)}
                             </p>
                             <p
