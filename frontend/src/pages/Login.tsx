@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   ArrowRight,
   Eye,
@@ -14,7 +14,6 @@ import { useAuth } from '../context/useAuth'
 
 function Login() {
   const { login, loading } = useAuth()
-  const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
