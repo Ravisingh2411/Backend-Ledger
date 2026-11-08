@@ -176,7 +176,7 @@ function Home() {
                       <p className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">₹2,48,650</p>
                       <div className="mt-2 flex items-center gap-1 text-[9px] text-[#B8D9C2]"><TrendingUp size={11} /> All accounts combined</div>
                     </div>
-                    <div className="rounded-xl border border-[#E9EF EA] bg-[#FBFCFA] p-3.5 sm:p-4">
+                    <div className="rounded-xl border border-[#E9EFEB] bg-[#FBFCFA] p-3.5 sm:p-4">
                       <div className="flex items-center justify-between"><span className="text-[9px] font-medium text-[#87958C] sm:text-[10px]">MONEY IN</span><span className="rounded-md bg-[#E8F4EA] p-1 text-[#3D9460]"><ArrowDownLeft size={13} /></span></div>
                       <p className="mt-2 text-lg font-bold text-[#244333] sm:text-xl">₹45,000</p>
                       <p className="mt-1 text-[9px] text-[#8B9990]">This month</p>
