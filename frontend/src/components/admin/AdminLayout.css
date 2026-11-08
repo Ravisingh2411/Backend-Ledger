@@ -1,8 +1,7 @@
-/* Legacy page-level admin chrome is hidden while the shared AdminLayout owns navigation. */
+/* The shared AdminLayout owns all admin navigation and page headers. */
 .admin-layout-content > div > aside,
 .admin-layout-content > div > main > header,
-.admin-layout-content > div > nav,
-.admin-layout-content > div > div.fixed {
+.admin-layout-content > div > nav {
   display: none !important;
 }
 
