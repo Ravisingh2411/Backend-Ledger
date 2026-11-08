@@ -81,8 +81,8 @@ function Home() {
               </Link>
             ) : (
               <>
-                <Link to="/login" className="rounded-xl px-3 py-2.5 text-sm font-semibold text-[#34483D] transition hover:bg-[#F0F5F0] sm:px-4">Sign in</Link>
-                <Link to="/register" className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#176B52] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#12543F] sm:px-5">
+                <Link reloadDocument to="/login" className="relative z-50 pointer-events-auto rounded-xl px-3 py-2.5 text-sm font-semibold text-[#34483D] transition hover:bg-[#F0F5F0] sm:px-4">Sign in</Link>
+                <Link reloadDocument to="/register" className="relative z-50 pointer-events-auto inline-flex h-10 items-center gap-2 rounded-xl bg-[#176B52] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#12543F] sm:px-5">
                   Create account <ArrowRight size={16} />
                 </Link>
               </>
@@ -109,7 +109,7 @@ function Home() {
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link to={isAuthenticated ? '/dashboard' : '/register'} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#176B52] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(23,107,82,0.2)] transition hover:-translate-y-0.5 hover:bg-[#12543F]">
+              <Link reloadDocument={!isAuthenticated} to={isAuthenticated ? '/dashboard' : '/register'} className="relative z-10 pointer-events-auto inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#176B52] px-6 text-sm font-bold text-white shadow-[0_12px_28px_rgba(23,107,82,0.2)] transition hover:-translate-y-0.5 hover:bg-[#12543F]">
                 {isAuthenticated ? 'Go to dashboard' : 'Create your account'} <ArrowRight size={17} />
               </Link>
                           </div>
