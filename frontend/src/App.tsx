@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Transactions = lazy(() => import('./pages/Transactions'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminTransactions = lazy(() => import('./pages/AdminTransactions'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
@@ -38,6 +39,7 @@ function App() {
 
           {/* Admin Routes */}
           <Route element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
             <Route
               path="/admin"
               element={<Navigate to="/admin/dashboard" replace />}
@@ -62,6 +64,7 @@ function App() {
               path="/admin/audit-logs"
               element={<AdminAuditLogs />}
             />
+            </Route>
           </Route>
 
           {/* User Routes */}
