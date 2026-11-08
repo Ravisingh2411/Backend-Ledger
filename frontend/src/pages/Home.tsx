@@ -11,7 +11,6 @@ import {
   WalletCards,
   ArrowLeftRight,
   ChartNoAxesCombined,
-  Menu,
 } from 'lucide-react'
 import { useAuth } from '../context/useAuth'
 
